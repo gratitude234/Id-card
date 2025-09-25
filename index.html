@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ID Card Generator — Great Landmark College</title>
+
+  <!-- QR + html2canvas (CDNs) -->
+  <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.10/dist/easy.qrcode.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+
+  <style>
+    :root {
+      --blue: #0d2f6f;
+      --yellow: #f9a825;
+      --red: #e54c4c;
+      --bg: #f4f7f6;
+      --ink: #333;
+      --border-radius: 10px;
+      --padding-sm: 16px;
+      --shadow: 0 4px 12px rgba(0,0,0,.1);
+      --focus: #5b9dd9;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+      background: var(--bg); padding: 16px; display: flex; flex-direction: column; align-items: center; color: var(--ink);
+    }
+
+    .container {
+      background: #fff; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow);
+      max-width: 960px; width: 100%; margin-bottom: 20px;
+    }
+    h1 { text-align: center; color: var(--blue); margin: 0 0 16px; font-size: 26px; font-weight: 700; }
+    h2 { color: var(--blue); border-bottom: 2px solid #eee; padding-bottom: 8px; margin: 16px 0; font-size: 20px; }
+
+    /* Form */
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .col-6 { grid-column: span 6; }
+    .col-12 { grid-column: span 12; }
+
+    .form-group { position: relative; display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-weight: 600; color: #444; font-size: 14px; }
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="url"],
+    .form-group input[type="email"],
+    .form-group select {
+      padding: var(--padding-sm); border: 1px solid #ddd; border-radius: var(--border-radius);
+      font-size: 16px; background: #fff; transition: border-color 0.2s ease;
+    }
+    .form-group input:focus,
+    .form-group select:focus { outline: 2px solid var(--focus); border-color: var(--focus); }
+    .form-group.valid::after {
+      content: '✔'; position: absolute; right: 12px; top: 36px; color: #2ecc71; font-size: 16px;
+    }
+    .form-group.invalid::after {
+      content: '✘'; position: absolute; right: 12px; top: 36px; color: #b00020; font-size: 16px;
+    }
+    .form-group.valid input, .form-group.valid select { border-color: #2ecc71; }
+    .form-group.invalid input, .form-group.invalid select { border-color: #b00020; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .help-text { font-size: 12px; color: #777; }
+    .error-text { font-size: 12px; color: #b00020; display: none; margin-top: 4px; }
+    .loading {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 1000; font-size: 16px;
+    }
+    .loading.active { display: flex; align-items: center; gap: 8px; }
+    .loading::before { content: '⏳'; }
+
+    .btn {
+      background: var(--blue); color: #fff; padding: 14px 20px; border: 0; border-radius: var(--border-radius);
+      cursor: pointer; font-size: 16px; font-weight: 600; transition: transform 0.1s ease, background 0.2s ease;
+      min-height: 48px; touch-action: manipulation;
+    }
+    .btn:hover { background: #1e3a8a; transform: scale(1.02); }
+    .btn:active { transform: scale(0.98); }
+    .btn.secondary { background: #eef2ff; color: #1e2a78; border: 1px solid #dfe3ff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Student Controls */
+    .student-controls { display: flex; flex-direction: row; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .student-controls select { flex: 1; }
+
+    /* Card area */
+    .tools { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
+
+    .id-stage { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+    .id-card-wrapper {
+      width: 350px; aspect-ratio: 85.6 / 54; position: relative;
+      perspective: 1000px; margin: 12px auto 0; transition: transform 0.3s ease;
+    }
+    .id-card-container {
+      position: absolute; inset: 0; transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55), scale 0.2s ease;
+    }
+    .id-card-container:hover { scale: 1.02; }
+    .id-card-container.flipped { transform: rotateY(180deg); }
+
+    .face {
+      position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.18); background: #fff;
+      display: flex; flex-direction: column; overflow: hidden; color: #333;
+      outline: 2px solid transparent;
+    }
+    .face:focus { outline: 2px solid var(--focus); outline-offset: 3px; }
+    .back { transform: rotateY(180deg); }
+
+    .id-card-header {
+      background: var(--blue); color: #fff; padding: 8px 14px; display: flex;
+      align-items: center; height: 40px; border-bottom: 3px solid var(--yellow);
+    }
+    .logo { height: 28px; width: 28px; margin-right: 10px; background: #fff; border-radius: 50%; object-fit: cover; }
+    .id-card-header h3 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: .3px; }
+
+    .body-front { display: flex; padding: 12px; gap: 12px; flex-grow: 1; align-items: flex-start; }
+    .photo { width: 74px; height: 74px; border-radius: 8px; overflow: hidden; border: 2px solid var(--yellow); flex-shrink: 0; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .details { flex: 1; min-width: 0; }
+    .details h4 { font-size: 13px; color: var(--blue); margin: 0 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; font-weight: 800; }
+    .kv { font-size: 11px; margin: 3px 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
+
+    .body-back { padding: 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .contact p { font-size: 11px; margin: 3px 0; }
+    .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
+
+    .bottom-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: auto; }
+    .qr { width: 66px; height: 66px; border: 1px solid #ddd; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .qr canvas { width: 100% !important; height: 100% !important; object-fit: contain; }
+    .sign { text-align: right; font-size: 11px; line-height: 1.25; flex: 1; }
+    .sign p { margin: 0; }
+    .sign .name { font-weight: 800; color: var(--blue); font-size: 12px; margin-top: 2px; }
+
+    .print-page { display: none; }
+    .front-grid, .back-grid {
+      position: absolute; top: 0; left: 0; width: 210mm; height: 297mm;
+      display: grid; grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(2, 54mm);
+      gap: 10mm; justify-content: center; align-content: center;
+    }
+    .back-grid { transform: rotate(180deg); } /* Align backs for long-edge duplex */
+    .id-card-wrapper { width: 85.6mm; height: 54mm; }
+    .id-card-container { transform: none; }
+    .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
+
+    @media print {
+      @page { size: A4; margin: 0; }
+      body { background: #fff; padding: 0; margin: 0; }
+      .container { box-shadow: none; padding: 0; }
+      .id-stage, .tools, .form-section, .notes, .loading { display: none !important; }
+      .print-page { display: block; position: relative; width: 210mm; height: 297mm; page-break-after: always; }
+      .front-grid { display: grid; }
+      .back-grid { display: none; }
+      .face.back { display: none; }
+      .print-page.print-back .front-grid { display: none; }
+      .print-page.print-back .back-grid { display: grid; }
+      .print-page.print-back .face.front { display: none; }
+      .print-page.print-back .face.back { display: block; transform: none; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .container { padding: 16px; box-shadow: var(--shadow); }
+      h1 { font-size: 24px; }
+      h2 { font-size: 18px; }
+      .grid { grid-template-columns: 1fr; gap: 10px; }
+      .col-6, .col-12 { grid-column: span 1; }
+      .student-controls { flex-direction: column; gap: 8px; }
+      .tools { flex-direction: column; }
+      .btn { width: 100%; min-height: 50px; font-size: 16px; }
+      .id-card-wrapper { width: 90%; max-width: 320px; margin: 10px auto; }
+      .id-stage { justify-content: center; }
+      .notes { font-size: 13px; text-align: left; }
+      .error-text { font-size: 13px; }
+      .help-text { font-size: 13px; }
+      .form-group label { font-size: 14px; }
+      .form-group input, .form-group select { font-size: 16px; padding: 14px; }
+      .id-card-header h3 { font-size: 14px; }
+      .kv { font-size: 10px; }
+      .footer { font-size: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .id-card-wrapper { width: 100%; }
+      .kv strong { min-width: 80px; }
+      .photo { width: 60px; height: 60px; }
+      .qr { width: 50px; height: 50px; }
+      .sign { font-size: 10px; }
+      .name { font-size: 11px; }
+    }
+
+    .notes { font-size: 12px; color: #666; text-align: center; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container" aria-live="polite">
+    <h1>Great Landmark College ID Card Generator</h1>
+
+    <!-- FORM -->
+    <div class="form-section">
+      <h2>Enter Student Details</h2>
+      <div class="student-controls">
+        <div class="form-group">
+          <label for="studentSelect">Select Student</label>
+          <select id="studentSelect" aria-describedby="errStudentSelect">
+            <option value="0">Student 1</option>
+          </select>
+          <div class="error-text" id="errStudentSelect" aria-live="assertive"></div>
+        </div>
+        <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
+        <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove Selected</button>
+      </div>
+      <form id="form" novalidate>
+        <div class="grid">
+          <div class="col-6">
+            <div class="form-group">
+              <label for="studentName">Student Name</label>
+              <input id="studentName" type="text" required value="ADEKUNLE SAMUEL" autocomplete="name" aria-describedby="errName" />
+              <div class="error-text" id="errName" aria-live="assertive">Please enter a name.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="admissionNo">Admission No</label>
+              <input id="admissionNo" type="text" required placeholder="e.g., GLC/2025/001"
+                     pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001" aria-describedby="errAdm" />
+              <div class="error-text" id="errAdm" aria-live="assertive">Use format GLC/2025/001.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="klass">Class</label>
+              <input id="klass" type="text" required value="SS1 A" aria-describedby="errClass" />
+              <div class="error-text" id="errClass" aria-live="assertive">Please enter a class.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="dob">Date of Birth</label>
+              <input id="dob" type="date" required value="2009-09-15" aria-describedby="errDob" />
+              <div class="error-text" id="errDob" aria-live="assertive">Please select a valid date.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="validUntil">Valid Until</label>
+              <input id="validUntil" type="date" required value="2025-07-31" aria-describedby="errValid" />
+              <div class="error-text" id="errValid" aria-live="assertive">Please select a valid date.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="director">Director’s Name (for signature)</label>
+              <input id="director" type="text" required value="OLANIBI GREAT-GOD" aria-describedby="errDir" />
+              <div class="error-text" id="errDir" aria-live="assertive">Please enter a name.</div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="form-group">
+              <label for="photoUrl">Student Photo URL</label>
+              <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg"
+                     value="https://via.placeholder.com/300x300?text=Student" aria-describedby="errPhoto" />
+              <div class="row">
+                <input id="photoFile" type="file" accept="image/*,image/heic,image/heif" />
+                <span class="help-text">Upload overrides URL. Large images are scaled.</span>
+              </div>
+              <div class="error-text" id="errPhoto" aria-live="assertive"></div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input id="phone" type="text" value="+234 801 123 4567" />
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input id="email" type="email" value="info@greatlandmarkcollege.org" />
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="form-group">
+              <label for="address">Address</label>
+              <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure" />
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="row">
+              <button class="btn" type="submit">Update Preview</button>
+              <button class="btn secondary" type="button" id="resetBtn">Reset to Defaults</button>
+            </div>
+          </div>
+        </div>
+      </form>
+      <div class="loading">Processing...</div>
+    </div>
+
+    <!-- OUTPUT -->
+    <h2>Generated ID Card (Current Student)</h2>
+    <div class="tools">
+      <button class="btn secondary" id="flipBtn" type="button">Flip</button>
+      <button class="btn secondary" id="printBtn" type="button">Print All (Duplex)</button>
+    </div>
+
+    <div class="id-stage" id="idStage">
+      <!-- Single card preview -->
+    </div>
+
+    <div id="printPages" aria-hidden="true">
+      <!-- Dynamically populated for printing -->
+    </div>
+
+    <p class="notes" id="pageCount">Tip: Add students and use <b>Print All (Duplex)</b> to print fronts and backs on the same A4 sheets (4 cards per sheet, 85.6 mm × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print again.</p>
+  </div>
+
+  <script>
+    (function () {
+      const CONFIG = {
+        defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
+        defaultLogo: 'https://via.placeholder.com/28x28/0d2f6f/FFFFFF?text=L',
+        qrSize: 66,
+        captureScale: 1.5,
+        debounceDelay: 300,
+        cardsPerPage: 4
+      };
+
+      // Elements
+      const elements = {
+        form: document.getElementById('form'),
+        fields: {
+          name: document.getElementById('studentName'),
+          adm: document.getElementById('admissionNo'),
+          klass: document.getElementById('klass'),
+          dob: document.getElementById('dob'),
+          valid: document.getElementById('validUntil'),
+          director: document.getElementById('director'),
+          photoUrl: document.getElementById('photoUrl'),
+          photoFile: document.getElementById('photoFile'),
+          phone: document.getElementById('phone'),
+          email: document.getElementById('email'),
+          address: document.getElementById('address'),
+          studentSelect: document.getElementById('studentSelect')
+        },
+        errors: {
+          name: document.getElementById('errName'),
+          adm: document.getElementById('errAdm'),
+          klass: document.getElementById('errClass'),
+          dob: document.getElementById('errDob'),
+          valid: document.getElementById('errValid'),
+          photo: document.getElementById('errPhoto'),
+          director: document.getElementById('errDir'),
+          studentSelect: document.getElementById('errStudentSelect')
+        },
+        tools: {
+          flipBtn: document.getElementById('flipBtn'),
+          printBtn: document.getElementById('printBtn'),
+          resetBtn: document.getElementById('resetBtn'),
+          addStudentBtn: document.getElementById('addStudentBtn'),
+          removeStudentBtn: document.getElementById('removeStudentBtn')
+        },
+        idStage: document.getElementById('idStage'),
+        printPages: document.getElementById('printPages'),
+        pageCount: document.getElementById('pageCount'),
+        loading: document.querySelector('.loading')
+      };
+
+      let students = [{
+        name: 'ADEKUNLE SAMUEL',
+        adm: 'GLC/2025/001',
+        klass: 'SS1 A',
+        dob: '2009-09-15',
+        valid: '2025-07-31',
+        director: 'OLANIBI GREAT-GOD',
+        photo: CONFIG.defaultPhoto,
+        phone: '+234 801 123 4567',
+        email: 'info@greatlandmarkcollege.org',
+        address: '45, Oke Alaro Rd, Abusoro, Akure'
+      }];
+      let currentStudentIndex = 0;
+      let qrInstances = [];
+      let debounceTimer;
+      const cardCaches = [];
+
+      // Utilities
+      const utils = {
+        pad: n => n.toString().padStart(2, '0'),
+        fmtDate(iso) {
+          if (!iso) return '—';
+          const d = new Date(iso);
+          return Number.isNaN(d.getTime()) ? '—' : `${this.pad(d.getDate())}/${this.pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+        },
+        sanitize(str) {
+          return str.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
+        },
+        showErr(el, show, msg) {
+          el.style.display = show ? 'block' : 'none';
+          if (msg) el.textContent = msg;
+        },
+        isSafeUrl(url) {
+          return url.startsWith('https://') && url.match(/\.(jpg|jpeg|png|gif)$/i);
+        },
+        preloadImage(url) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = url;
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(new Error('Failed to load image'));
+          });
+        }
+      };
+
+      // State Management
+      const state = {
+        save() {
+          try {
+            const data = { students, currentStudentIndex };
+            const serialized = JSON.stringify(data);
+            if (serialized.length > 4 * 1024 * 1024) { // Warn at ~4MB
+              alert('Warning: Data is large and may exceed storage limits. Consider exporting or removing some students.');
+            }
+            localStorage.setItem('glc_id_state', serialized);
+          } catch (err) {
+            console.error('Failed to save state:', err);
+            alert('Failed to save data. Storage may be full.');
+          }
+        },
+        load() {
+          try {
+            const raw = localStorage.getItem('glc_id_state');
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            students = s.students || students;
+            currentStudentIndex = Math.min(s.currentStudentIndex || 0, students.length - 1);
+            cardCaches.length = 0;
+            students.forEach(() => cardCaches.push({ frontCache: null, backCache: null }));
+            this.updateForm();
+            this.updateStudentSelect();
+          } catch (err) {
+            console.error('Failed to load state:', err);
+          }
+        },
+        updateForm() {
+          const student = students[currentStudentIndex] || {};
+          Object.entries(elements.fields).forEach(([k, el]) => {
+            if (k !== 'studentSelect' && k !== 'photoFile') {
+              el.value = student[k] || '';
+            }
+          });
+          elements.fields.photoFile.value = '';
+        },
+        updateStudentSelect() {
+          elements.fields.studentSelect.innerHTML = students.map((s, i) => 
+            `<option value="${i}">Student ${i + 1}${s.name ? `: ${s.name}` : ''}</option>`
+          ).join('');
+          elements.fields.studentSelect.value = currentStudentIndex;
+          elements.tools.removeStudentBtn.disabled = students.length <= 1;
+        },
+        updatePageCount() {
+          const pageCount = Math.ceil(students.length / CONFIG.cardsPerPage);
+          elements.pageCount.textContent = `Tip: ${students.length} card${students.length !== 1 ? 's' : ''} will print on ${pageCount} A4 sheet${pageCount !== 1 ? 's' : ''} (4 cards per sheet, 85.6 mm × 54 mm, duplex: fronts on one side, backs on the other). For non-duplex printers, print fronts, flip the paper (long edge), and print again.`;
+        }
+      };
+
+      // Photo Handling
+      const photo = {
+        async fileToDataUrl(file) {
+          return new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = () => res(reader.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(file);
+          });
+        },
+        async resizeImage(file, maxSize = 300) {
+          const img = new Image();
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          img.src = await this.fileToDataUrl(file);
+          return new Promise(resolve => {
+            img.onload = () => {
+              const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.onerror = () => resolve(CONFIG.defaultPhoto);
+          });
+        },
+        async setPhoto() {
+          elements.loading.classList.add('active');
+          utils.showErr(elements.errors.photo, false);
+          try {
+            const file = elements.fields.photoFile.files?.[0];
+            if (file) {
+              const dataUrl = await this.resizeImage(file);
+              students[currentStudentIndex].photo = dataUrl;
+              elements.fields.photoUrl.value = '';
+              return dataUrl;
+            }
+            const url = elements.fields.photoUrl.value.trim();
+            if (url && utils.isSafeUrl(url)) {
+              await utils.preloadImage(url);
+              students[currentStudentIndex].photo = url;
+              return url;
+            }
+            students[currentStudentIndex].photo = CONFIG.defaultPhoto;
+            return CONFIG.defaultPhoto;
+          } catch (err) {
+            console.error('Photo processing error:', err);
+            utils.showErr(elements.errors.photo, true, 'Failed to process image.');
+            students[currentStudentIndex].photo = CONFIG.defaultPhoto;
+            return CONFIG.defaultPhoto;
+          } finally {
+            elements.loading.classList.remove('active');
+          }
+        },
+        async preloadLogos() {
+          try {
+            await utils.preloadImage(CONFIG.defaultLogo);
+          } catch (err) {
+            console.error('Failed to preload logos:', err);
+          }
+        }
+      };
+
+      // QR Code
+      const qr = {
+        render(index) {
+          const student = students[index] || {};
+          const text = `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org`;
+          const qrWraps = [
+            document.querySelector(`#qr-${index}`),
+            document.querySelector(`#print-qr-${index}`)
+          ].filter(Boolean);
+          qrWraps.forEach(qrWrap => {
+            qrWrap.innerHTML = '';
+            if (window.QRCode) {
+              qrInstances[index] = new QRCode(qrWrap, {
+                text,
+                width: CONFIG.qrSize,
+                height: CONFIG.qrSize,
+                colorDark: "#000",
+                colorLight: "#fff",
+                correctLevel: QRCode.CorrectLevel.H
+              });
+            }
+          });
+        }
+      };
+
+      // Form Validation and Preview
+      const form = {
+        validateField(field, errorEl, pattern = null) {
+          const value = field.value.trim();
+          const isValid = pattern ? new RegExp(pattern).test(value) : !!value;
+          utils.showErr(errorEl, !isValid);
+          field.parentElement.classList.toggle('valid', isValid);
+          field.parentElement.classList.toggle('invalid', !isValid);
+          return isValid;
+        },
+        validateDates() {
+          const dob = new Date(elements.fields.dob.value);
+          const valid = new Date(elements.fields.valid.value);
+          if (dob >= valid) {
+            utils.showErr(elements.errors.valid, true, 'Valid Until must be after Date of Birth.');
+            elements.fields.valid.parentElement.classList.add('invalid');
+            return false;
+          }
+          return true;
+        },
+        updateStudentData() {
+          students[currentStudentIndex] = {
+            name: elements.fields.name.value,
+            adm: elements.fields.adm.value,
+            klass: elements.fields.klass.value,
+            dob: elements.fields.dob.value,
+            valid: elements.fields.valid.value,
+            director: elements.fields.director.value,
+            photo: students[currentStudentIndex]?.photo || CONFIG.defaultPhoto,
+            phone: elements.fields.phone.value,
+            email: elements.fields.email.value,
+            address: elements.fields.address.value
+          };
+        },
+        updatePreview() {
+          this.updateStudentData();
+          const isValid = [
+            this.validateField(elements.fields.name, elements.errors.name),
+            this.validateField(elements.fields.adm, elements.errors.adm, elements.fields.adm.pattern),
+            this.validateField(elements.fields.klass, elements.errors.klass),
+            this.validateField(elements.fields.dob, elements.errors.dob),
+            this.validateField(elements.fields.valid, elements.errors.valid),
+            this.validateField(elements.fields.director, elements.errors.director),
+            this.validateDates()
+          ].every(Boolean);
+
+          // Preview only the current student
+          elements.idStage.innerHTML = '';
+          const student = students[currentStudentIndex];
+          elements.idStage.insertAdjacentHTML('beforeend', `
+            <div class="id-card-wrapper" aria-label="ID card preview">
+              <div class="id-card-container" id="card-${currentStudentIndex}">
+                <section class="face front" tabindex="0" aria-label="Front of ID card" aria-hidden="false">
+                  <header class="id-card-header">
+                    <img src="${CONFIG.defaultLogo}" alt="College Logo" class="logo" loading="lazy" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-front">
+                    <div class="photo">
+                      <img src="${student.photo}" alt="Student Photo" loading="lazy" crossorigin="anonymous">
+                    </div>
+                    <div class="details">
+                      <h4>STUDENT IDENTITY CARD</h4>
+                      <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                      <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                      <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                      <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                  </footer>
+                </section>
+                <section class="face back" tabindex="0" aria-label="Back of ID card" aria-hidden="true">
+                  <header class="id-card-header">
+                    <img src="${CONFIG.defaultLogo}" alt="College Logo" class="logo" loading="lazy" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-back">
+                    <div class="contact">
+                      <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
+                      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+                      <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
+                      <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
+                      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+                    </div>
+                    <div class="bottom-row">
+                      <div class="qr" id="qr-${currentStudentIndex}"></div>
+                      <div class="sign">
+                        <p>Director’s Signature:</p>
+                        <p class="name">${utils.sanitize(student.director) || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                  </footer>
+                </section>
+              </div>
+            </div>
+          `);
+          qr.render(currentStudentIndex);
+
+          // Generate print pages
+          elements.printPages.innerHTML = '';
+          for (let i = 0; i < students.length; i += CONFIG.cardsPerPage) {
+            const pageStudents = students.slice(i, i + CONFIG.cardsPerPage);
+            let frontHtml = '<div class="front-grid">';
+            let backHtml = '<div class="back-grid">';
+            pageStudents.forEach((student, index) => {
+              const globalIndex = i + index;
+              const cardHtml = `
+                <div class="id-card-wrapper" aria-hidden="true">
+                  <div class="id-card-container" id="print-card-${globalIndex}">
+                    <section class="face front">
+                      <header class="id-card-header">
+                        <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                        <h3>GREAT LANDMARK COLLEGE</h3>
+                      </header>
+                      <div class="body-front">
+                        <div class="photo">
+                          <img src="${student.photo}" alt="Student Photo" crossorigin="anonymous">
+                        </div>
+                        <div class="details">
+                          <h4>STUDENT IDENTITY CARD</h4>
+                          <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                          <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                          <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                          <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
+                        </div>
+                      </div>
+                      <footer class="footer">
+                        IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                      </footer>
+                    </section>
+                    <section class="face back">
+                      <header class="id-card-header">
+                        <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                        <h3>GREAT LANDMARK COLLEGE</h3>
+                      </header>
+                      <div class="body-back">
+                        <div class="contact">
+                          <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
+                          <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+                          <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
+                          <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
+                          <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+                        </div>
+                        <div class="bottom-row">
+                          <div class="qr" id="print-qr-${globalIndex}"></div>
+                          <div class="sign">
+                            <p>Director’s Signature:</p>
+                            <p class="name">${utils.sanitize(student.director) || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <footer class="footer">
+                        IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                      </footer>
+                    </section>
+                  </div>
+                </div>
+              `;
+              frontHtml += cardHtml;
+              backHtml += cardHtml;
+            });
+            frontHtml += '</div>';
+            backHtml += '</div>';
+            elements.printPages.insertAdjacentHTML('beforeend', `<div class="print-page">${frontHtml}${backHtml}</div>`);
+            pageStudents.forEach((_, index) => qr.render(i + index));
+          }
+
+          cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || { frontCache: null, backCache: null };
+          card.clearCache(currentStudentIndex);
+          state.save();
+          state.updateStudentSelect();
+          state.updatePageCount();
+          return isValid;
+        }
+      };
+
+      // Card Download and Print
+      const card = {
+        clearCache(index) {
+          if (index !== undefined && cardCaches[index]) {
+            cardCaches[index].frontCache = cardCaches[index].backCache = null;
+          }
+        },
+        async captureFace(index, selector) {
+          elements.loading.classList.add('active');
+          const cacheKey = selector.includes('.front') ? 'frontCache' : 'backCache';
+          if (cardCaches[index]?.[cacheKey]) {
+            elements.loading.classList.remove('active');
+            return cardCaches[index][cacheKey];
+          }
+          const face = document.querySelector(`#card-${index} ${selector}`) || document.querySelector(`#print-card-${index} ${selector}`);
+          if (!face) throw new Error('Card not found');
+          const container = face.closest('.id-card-container');
+          const wasFlipped = container.classList.contains('flipped');
+          const originalStyle = face.style.boxShadow;
+          face.style.boxShadow = 'none';
+          if (selector.includes('.front') && wasFlipped) container.classList.remove('flipped');
+          if (selector.includes('.back') && !wasFlipped) container.classList.add('flipped');
+          await new Promise(r => setTimeout(r, 100));
+          try {
+            const canvas = await html2canvas(face, {
+              scale: CONFIG.captureScale,
+              useCORS: true,
+              logging: false,
+              backgroundColor: null
+            });
+            cardCaches[index] = cardCaches[index] || { frontCache: null, backCache: null };
+            cardCaches[index][cacheKey] = canvas.toDataURL('image/png');
+            return cardCaches[index][cacheKey];
+          } catch (err) {
+            console.error(`Failed to capture ${selector} for card ${index}:`, err);
+            throw err;
+          } finally {
+            face.style.boxShadow = originalStyle;
+            if (selector.includes('.front') && wasFlipped) container.classList.add('flipped');
+            if (selector.includes('.back') && !wasFlipped) container.classList.remove('flipped');
+            elements.loading.classList.remove('active');
+          }
+        },
+        triggerDownload(dataUrl, filename) {
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+      };
+
+      // Event Handlers
+      const events = {
+        init() {
+          elements.form.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            if (e.target === elements.fields.photoUrl) {
+              elements.fields.photoFile.value = '';
+              photo.setPhoto().then(() => form.updatePreview());
+            }
+            debounceTimer = setTimeout(() => form.updatePreview(), CONFIG.debounceDelay);
+          });
+
+          elements.fields.photoFile.addEventListener('change', async () => {
+            await photo.setPhoto();
+            form.updatePreview();
+          });
+
+          elements.form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!form.updatePreview()) return;
+            await photo.setPhoto();
+          });
+
+          elements.tools.flipBtn.addEventListener('click', () => {
+            const container = document.querySelector(`#card-${currentStudentIndex}`);
+            if (container) {
+              container.classList.toggle('flipped');
+              const isFlipped = container.classList.contains('flipped');
+              container.querySelector('.front').setAttribute('aria-hidden', isFlipped);
+              container.querySelector('.back').setAttribute('aria-hidden', !isFlipped);
+            }
+          });
+
+          elements.idStage.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              elements.tools.flipBtn.click();
+            }
+          });
+
+          elements.tools.printBtn.addEventListener('click', () => {
+            window.print();
+          });
+
+          elements.tools.resetBtn.addEventListener('click', () => {
+            localStorage.removeItem('glc_id_state');
+            window.location.reload();
+          });
+
+          elements.tools.addStudentBtn.addEventListener('click', () => {
+            students.push({
+              name: '', adm: '', klass: '', dob: '', valid: '', director: '',
+              photo: CONFIG.defaultPhoto, phone: '', email: '', address: ''
+            });
+            currentStudentIndex = students.length - 1;
+            state.updateForm();
+            form.updatePreview();
+          });
+
+          elements.tools.removeStudentBtn.addEventListener('click', () => {
+            if (students.length <= 1) return;
+            students.splice(currentStudentIndex, 1);
+            currentStudentIndex = Math.min(currentStudentIndex, students.length - 1);
+            state.updateForm();
+            form.updatePreview();
+          });
+
+          elements.fields.studentSelect.addEventListener('change', (e) => {
+            currentStudentIndex = parseInt(e.target.value, 10);
+            state.updateForm();
+            form.updatePreview();
+          });
+
+          if (!window.html2canvas) {
+            alert('html2canvas not loaded.');
+          }
+        }
+      };
+
+      // Boot
+      window.addEventListener('load', () => {
+        state.load();
+        photo.preloadLogos().then(() => {
+          form.updatePreview();
+        });
+        events.init();
+      });
+    })();
+  </script>
+</body>
+                </html>
