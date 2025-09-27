@@ -134,6 +134,12 @@
     .sign { text-align: right; font-size: 11px; line-height: 1.25; flex: 1; }
     .sign p { margin: 0; }
     .sign .name { font-weight: 800; color: var(--blue); font-size: 12px; margin-top: 2px; }
+    .sign .sig {
+      max-height: 20px;
+      width: auto;
+      display: block;
+      margin: 2px 0;
+    }
 
     .print-page { display: none; }
     .front-grid, .back-grid {
@@ -148,25 +154,32 @@
 
     @media print {
       @page { size: A4; margin: 0; }
-      body { background: #fff; padding: 0; margin: 0; }
-      .container { box-shadow: none; padding: 0; }
-      .id-stage, .tools, .form-section, .notes, .loading { display: none !important; }
-      h1, h2 { display: none !important; }
-      .print-page { display: block; position: relative; width: 210mm; height: 297mm; page-break-after: always; }
-      .front-grid { display: grid; }
-      .back-grid { display: none; }
-      .print-page.print-back .front-grid { display: none; }
-      .print-page.print-back .back-grid { display: grid; }
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      forced-color-adjust: none !important;
+
+      html, body, * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        forced-color-adjust: none !important;
+      }
+
+      body { background:#fff; padding:0; margin:0; }
+      .container { box-shadow:none; padding:0; }
+      .id-stage, .tools, .form-section, .notes, .loading { display:none !important; }
+      h1, h2 { display:none !important; }
+
+      .print-page { display:block; position:relative; width:210mm; height:297mm; page-break-after:always; }
+      .front-grid { display:grid; }
+      .back-grid  { display:none; }
+      .print-page.print-back .front-grid { display:none; }
+      .print-page.print-back .back-grid  { display:grid; }
+
       .id-card-header {
         background-color: var(--blue) !important;
-        color: white !important;
+        color:#fff !important;
+        border-bottom-color: var(--yellow) !important;
       }
       .footer {
         background-color: var(--red) !important;
-        color: white !important;
+        color:#fff !important;
       }
     }
 
@@ -344,7 +357,8 @@
     (function () {
       const CONFIG = {
         defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
-        defaultLogo: 'https://via.placeholder.com/28x28/0d2f6f/FFFFFF?text=L',
+        defaultLogo: '/glc-logo.jpg',
+        defaultSignature: '/director-signature.jpg',
         qrSize: 66,
         captureScale: 2,
         debounceDelay: 300,
@@ -426,7 +440,7 @@
           if (msg) el.textContent = msg;
         },
         isSafeUrl(url) {
-          return url.startsWith('https://') && url.match(/\.(jpg|jpeg|png|gif)$/i);
+          return url.startsWith('https://') && url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
         },
         preloadImage(url) {
           return new Promise((resolve, reject) => {
@@ -548,6 +562,7 @@
         async preloadLogos() {
           try {
             await utils.preloadImage(CONFIG.defaultLogo);
+            await utils.preloadImage(CONFIG.defaultSignature);
           } catch (err) {
             console.error('Failed to preload logos:', err);
           }
@@ -669,6 +684,7 @@
                       <div class="qr" id="qr-${currentStudentIndex}"></div>
                       <div class="sign">
                         <p>Director’s Signature:</p>
+                        <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
                         <p class="name">${utils.sanitize(student.director) || '—'}</p>
                       </div>
                     </div>
@@ -701,7 +717,7 @@
               tempContainer.innerHTML = `
                 <section class="face front">
                   <header class="id-card-header">
-                    <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                    <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" />
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-front">
@@ -732,7 +748,7 @@
               tempContainer.innerHTML = `
                 <section class="face back">
                   <header class="id-card-header">
-                    <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                    <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" />
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
@@ -747,6 +763,7 @@
                       <div class="qr"></div>
                       <div class="sign">
                         <p>Director’s Signature:</p>
+                        <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
                         <p class="name">${utils.sanitize(student.director) || '—'}</p>
                       </div>
                     </div>
@@ -844,6 +861,7 @@
                             <div class="qr" id="print-qr-${globalIndex}"></div>
                             <div class="sign">
                               <p>Director’s Signature:</p>
+                              <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
                               <p class="name">${utils.sanitize(student.director) || '—'}</p>
                             </div>
                           </div>
