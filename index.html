@@ -20,6 +20,8 @@
       --padding-sm: 16px;
       --shadow: 0 4px 12px rgba(0,0,0,.1);
       --focus: #5b9dd9;
+      --page-w: 210mm;   /* default A4 */
+      --page-h: 297mm;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -113,6 +115,14 @@
       align-items: center; height: 40px; border-bottom: 3px solid var(--yellow);
     }
     .logo { height: 28px; width: 28px; margin-right: 10px; background: #fff; border-radius: 50%; object-fit: cover; }
+    .id-card-header img {
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 10px;
+      background: #fff;
+    }
     .id-card-header h3 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: .3px; }
 
     .body-front { display: flex; padding: 12px; gap: 12px; flex-grow: 1; align-items: flex-start; }
@@ -141,11 +151,11 @@
       margin: 2px 0;
     }
 
-    .print-page { display: none; }
+    .print-page { display: none; width: var(--page-w); height: var(--page-h); }
     .front-grid, .back-grid {
-      position: absolute; top: 0; left: 0; width: 210mm; height: 297mm;
+      position: absolute; top: 0; left: 0; width: var(--page-w); height: var(--page-h);
       display: grid; grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(2, 54mm);
-      gap: 10mm; justify-content: center; align-content: center;
+      gap: 10mm; justify-content: center; align-content: start;
     }
     .back-grid { transform: rotate(180deg); } /* Align backs for long-edge duplex */
     .id-card-wrapper { width: 85.6mm; height: 54mm; }
@@ -153,7 +163,7 @@
     .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
 
     @media print {
-      @page { size: A4; margin: 0; }
+      @page { size: auto; margin: 0; }
 
       html, body, * {
         -webkit-print-color-adjust: exact !important;
@@ -166,7 +176,7 @@
       .id-stage, .tools, .form-section, .notes, .loading { display:none !important; }
       h1, h2 { display:none !important; }
 
-      .print-page { display:block; position:relative; width:210mm; height:297mm; page-break-after:always; }
+      .print-page { display:block; position:relative; width:var(--page-w); height:var(--page-h); page-break-after:always; }
       .front-grid { display:grid; }
       .back-grid  { display:none; }
       .print-page.print-back .front-grid { display:none; }
@@ -339,6 +349,13 @@
       <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
       <label for="imageMode" style="display: flex; align-items: center; font-size: 14px; color: #444;">
         <input type="checkbox" id="imageMode"> Render as images (fixes missing colors on some printers)
+      </label>
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Paper size
+        <select id="paperSize">
+          <option value="A4">A4</option>
+          <option value="Letter">Letter</option>
+        </select>
       </label>
     </div>
 
@@ -648,7 +665,7 @@
               <div class="id-card-container" id="card-${currentStudentIndex}">
                 <section class="face front" tabindex="0" aria-label="Front of ID card" aria-hidden="false">
                   <header class="id-card-header">
-                    <img src="${CONFIG.defaultLogo}" alt="College Logo" class="logo" loading="lazy" />
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-front">
@@ -669,7 +686,7 @@
                 </section>
                 <section class="face back" tabindex="0" aria-label="Back of ID card" aria-hidden="true">
                   <header class="id-card-header">
-                    <img src="${CONFIG.defaultLogo}" alt="College Logo" class="logo" loading="lazy" />
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
@@ -717,7 +734,7 @@
               tempContainer.innerHTML = `
                 <section class="face front">
                   <header class="id-card-header">
-                    <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" />
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-front">
@@ -748,7 +765,7 @@
               tempContainer.innerHTML = `
                 <section class="face back">
                   <header class="id-card-header">
-                    <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" />
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
@@ -819,7 +836,7 @@
                     <div class="id-card-container">
                       <section class="face front">
                         <header class="id-card-header">
-                          <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                          <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
                           <h3>GREAT LANDMARK COLLEGE</h3>
                         </header>
                         <div class="body-front">
@@ -846,7 +863,7 @@
                     <div class="id-card-container">
                       <section class="face back">
                         <header class="id-card-header">
-                          <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                          <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
                           <h3>GREAT LANDMARK COLLEGE</h3>
                         </header>
                         <div class="body-back">
@@ -1012,6 +1029,17 @@
           });
 
           elements.tools.imageMode.addEventListener('change', () => {
+            form.updatePreview();
+          });
+
+          document.getElementById('paperSize').addEventListener('change', (e)=>{
+            if(e.target.value==="Letter"){
+              document.documentElement.style.setProperty('--page-w','215.9mm');
+              document.documentElement.style.setProperty('--page-h','279.4mm');
+            } else {
+              document.documentElement.style.setProperty('--page-w','210mm');
+              document.documentElement.style.setProperty('--page-h','297mm');
+            }
             form.updatePreview();
           });
 
