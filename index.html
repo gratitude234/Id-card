@@ -151,14 +151,23 @@
       body { background: #fff; padding: 0; margin: 0; }
       .container { box-shadow: none; padding: 0; }
       .id-stage, .tools, .form-section, .notes, .loading { display: none !important; }
+      h1, h2 { display: none !important; }
       .print-page { display: block; position: relative; width: 210mm; height: 297mm; page-break-after: always; }
       .front-grid { display: grid; }
       .back-grid { display: none; }
-      .face.back { display: none; }
       .print-page.print-back .front-grid { display: none; }
       .print-page.print-back .back-grid { display: grid; }
-      .print-page.print-back .face.front { display: none; }
-      .print-page.print-back .face.back { display: block; transform: none; }
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      forced-color-adjust: none !important;
+      .id-card-header {
+        background-color: var(--blue) !important;
+        color: white !important;
+      }
+      .footer {
+        background-color: var(--red) !important;
+        color: white !important;
+      }
     }
 
     @media (max-width: 768px) {
@@ -313,7 +322,11 @@
     <h2>Generated ID Card (Current Student)</h2>
     <div class="tools">
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
-      <button class="btn secondary" id="printBtn" type="button">Print All (Duplex)</button>
+      <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
+      <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
+      <label for="imageMode" style="display: flex; align-items: center; font-size: 14px; color: #444;">
+        <input type="checkbox" id="imageMode"> Render as images (fixes missing colors on some printers)
+      </label>
     </div>
 
     <div class="id-stage" id="idStage">
@@ -324,7 +337,7 @@
       <!-- Dynamically populated for printing -->
     </div>
 
-    <p class="notes" id="pageCount">Tip: Add students and use <b>Print All (Duplex)</b> to print fronts and backs on the same A4 sheets (4 cards per sheet, 85.6 mm × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print again.</p>
+    <p class="notes" id="pageCount">Tip: Add students and use <b>Print Fronts</b> and <b>Print Backs</b> to print fronts and backs on the same A4 sheets (4 cards per sheet, 85.6 mm × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print again.</p>
   </div>
 
   <script>
@@ -333,7 +346,7 @@
         defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
         defaultLogo: 'https://via.placeholder.com/28x28/0d2f6f/FFFFFF?text=L',
         qrSize: 66,
-        captureScale: 1.5,
+        captureScale: 2,
         debounceDelay: 300,
         cardsPerPage: 4
       };
@@ -367,7 +380,9 @@
         },
         tools: {
           flipBtn: document.getElementById('flipBtn'),
-          printBtn: document.getElementById('printBtn'),
+          printFrontsBtn: document.getElementById('printFrontsBtn'),
+          printBacksBtn: document.getElementById('printBacksBtn'),
+          imageMode: document.getElementById('imageMode'),
           resetBtn: document.getElementById('resetBtn'),
           addStudentBtn: document.getElementById('addStudentBtn'),
           removeStudentBtn: document.getElementById('removeStudentBtn')
@@ -598,7 +613,7 @@
             address: elements.fields.address.value
           };
         },
-        updatePreview() {
+        async updatePreview() {
           this.updateStudentData();
           const isValid = [
             this.validateField(elements.fields.name, elements.errors.name),
@@ -669,71 +684,187 @@
 
           // Generate print pages
           elements.printPages.innerHTML = '';
+          const useImages = elements.tools.imageMode.checked;
+          const dataUrls = [];
+          if (useImages) {
+            elements.loading.classList.add('active');
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.top = '0';
+            tempContainer.style.width = '85.6mm';
+            tempContainer.style.height = '54mm';
+            document.body.appendChild(tempContainer);
+            for (let i = 0; i < students.length; i++) {
+              const student = students[i];
+              // Capture front
+              tempContainer.innerHTML = `
+                <section class="face front">
+                  <header class="id-card-header">
+                    <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-front">
+                    <div class="photo">
+                      <img src="${student.photo}" alt="Student Photo" crossorigin="anonymous">
+                    </div>
+                    <div class="details">
+                      <h4>STUDENT IDENTITY CARD</h4>
+                      <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                      <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                      <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                      <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                  </footer>
+                </section>
+              `;
+              const frontUrl = await html2canvas(tempContainer.firstChild, {
+                scale: CONFIG.captureScale,
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+              }).then(c => c.toDataURL('image/png'));
+
+              // Capture back
+              tempContainer.innerHTML = `
+                <section class="face back">
+                  <header class="id-card-header">
+                    <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-back">
+                    <div class="contact">
+                      <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
+                      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+                      <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
+                      <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
+                      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+                    </div>
+                    <div class="bottom-row">
+                      <div class="qr"></div>
+                      <div class="sign">
+                        <p>Director’s Signature:</p>
+                        <p class="name">${utils.sanitize(student.director) || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                  </footer>
+                </section>
+              `;
+              const qrWrap = tempContainer.querySelector('.qr');
+              qrWrap.innerHTML = '';
+              new QRCode(qrWrap, {
+                text: `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org`,
+                width: CONFIG.qrSize,
+                height: CONFIG.qrSize,
+                colorDark: "#000",
+                colorLight: "#fff",
+                correctLevel: QRCode.CorrectLevel.H
+              });
+              const backUrl = await html2canvas(tempContainer.firstChild, {
+                scale: CONFIG.captureScale,
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+              }).then(c => c.toDataURL('image/png'));
+              dataUrls.push({ front: frontUrl, back: backUrl });
+            }
+            document.body.removeChild(tempContainer);
+            elements.loading.classList.remove('active');
+          }
+
           for (let i = 0; i < students.length; i += CONFIG.cardsPerPage) {
             const pageStudents = students.slice(i, i + CONFIG.cardsPerPage);
             let frontHtml = '<div class="front-grid">';
             let backHtml = '<div class="back-grid">';
             pageStudents.forEach((student, index) => {
               const globalIndex = i + index;
-              const cardHtml = `
-                <div class="id-card-wrapper" aria-hidden="true">
-                  <div class="id-card-container" id="print-card-${globalIndex}">
-                    <section class="face front">
-                      <header class="id-card-header">
-                        <img src="${CONFIG.defaultLogo}" alt="College Logo" />
-                        <h3>GREAT LANDMARK COLLEGE</h3>
-                      </header>
-                      <div class="body-front">
-                        <div class="photo">
-                          <img src="${student.photo}" alt="Student Photo" crossorigin="anonymous">
-                        </div>
-                        <div class="details">
-                          <h4>STUDENT IDENTITY CARD</h4>
-                          <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
-                          <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
-                          <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                          <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
-                        </div>
-                      </div>
-                      <footer class="footer">
-                        IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
-                      </footer>
-                    </section>
-                    <section class="face back">
-                      <header class="id-card-header">
-                        <img src="${CONFIG.defaultLogo}" alt="College Logo" />
-                        <h3>GREAT LANDMARK COLLEGE</h3>
-                      </header>
-                      <div class="body-back">
-                        <div class="contact">
-                          <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
-                          <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-                          <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
-                          <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
-                          <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-                        </div>
-                        <div class="bottom-row">
-                          <div class="qr" id="print-qr-${globalIndex}"></div>
-                          <div class="sign">
-                            <p>Director’s Signature:</p>
-                            <p class="name">${utils.sanitize(student.director) || '—'}</p>
+              if (useImages) {
+                const {front, back} = dataUrls[globalIndex];
+                frontHtml += `
+                  <div class="id-card-wrapper">
+                    <img src="${front}" style="width:100%; height:100%; display:block;" />
+                  </div>
+                `;
+                backHtml += `
+                  <div class="id-card-wrapper">
+                    <img src="${back}" style="width:100%; height:100%; display:block;" />
+                  </div>
+                `;
+              } else {
+                const frontCardHtml = `
+                  <div class="id-card-wrapper" aria-hidden="true">
+                    <div class="id-card-container">
+                      <section class="face front">
+                        <header class="id-card-header">
+                          <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                          <h3>GREAT LANDMARK COLLEGE</h3>
+                        </header>
+                        <div class="body-front">
+                          <div class="photo">
+                            <img src="${student.photo}" alt="Student Photo" crossorigin="anonymous">
+                          </div>
+                          <div class="details">
+                            <h4>STUDENT IDENTITY CARD</h4>
+                            <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                            <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                            <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                            <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
                           </div>
                         </div>
-                      </div>
-                      <footer class="footer">
-                        IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
-                      </footer>
-                    </section>
+                        <footer class="footer">
+                          IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                        </footer>
+                      </section>
+                    </div>
                   </div>
-                </div>
-              `;
-              frontHtml += cardHtml;
-              backHtml += cardHtml;
+                `;
+                const backCardHtml = `
+                  <div class="id-card-wrapper" aria-hidden="true">
+                    <div class="id-card-container">
+                      <section class="face back">
+                        <header class="id-card-header">
+                          <img src="${CONFIG.defaultLogo}" alt="College Logo" />
+                          <h3>GREAT LANDMARK COLLEGE</h3>
+                        </header>
+                        <div class="body-back">
+                          <div class="contact">
+                            <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
+                            <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+                            <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
+                            <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
+                            <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+                          </div>
+                          <div class="bottom-row">
+                            <div class="qr" id="print-qr-${globalIndex}"></div>
+                            <div class="sign">
+                              <p>Director’s Signature:</p>
+                              <p class="name">${utils.sanitize(student.director) || '—'}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <footer class="footer">
+                          IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                        </footer>
+                      </section>
+                    </div>
+                  </div>
+                `;
+                frontHtml += frontCardHtml;
+                backHtml += backCardHtml;
+              }
             });
             frontHtml += '</div>';
             backHtml += '</div>';
             elements.printPages.insertAdjacentHTML('beforeend', `<div class="print-page">${frontHtml}${backHtml}</div>`);
-            pageStudents.forEach((_, index) => qr.render(i + index));
+            if (!useImages) {
+              pageStudents.forEach((_, index) => qr.render(i + index));
+            }
           }
 
           cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || { frontCache: null, backCache: null };
@@ -798,6 +929,20 @@
         }
       };
 
+      // Print Helper
+      const printHelper = {
+        togglePrintBack(isBack) {
+          const printPages = document.querySelectorAll('.print-page');
+          printPages.forEach(page => {
+            if (isBack) {
+              page.classList.add('print-back');
+            } else {
+              page.classList.remove('print-back');
+            }
+          });
+        }
+      };
+
       // Event Handlers
       const events = {
         init() {
@@ -838,8 +983,18 @@
             }
           });
 
-          elements.tools.printBtn.addEventListener('click', () => {
+          elements.tools.printFrontsBtn.addEventListener('click', () => {
+            printHelper.togglePrintBack(false);
             window.print();
+          });
+
+          elements.tools.printBacksBtn.addEventListener('click', () => {
+            printHelper.togglePrintBack(true);
+            window.print();
+          });
+
+          elements.tools.imageMode.addEventListener('change', () => {
+            form.updatePreview();
           });
 
           elements.tools.resetBtn.addEventListener('click', () => {
@@ -888,4 +1043,4 @@
     })();
   </script>
 </body>
-                </html>
+</html>
