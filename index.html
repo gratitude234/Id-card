@@ -162,6 +162,44 @@
     .id-card-container { transform: none; }
     .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
 
+    /* Back face layout */
+    .body-back {
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    /* left column: contact details + QR */
+    .contact { display: grid; gap: 6px; }
+    .contact .kv { font-size: 10.5px; margin: 0; line-height: 1.35; }
+    .contact .kv strong { min-width: 24mm; color: var(--blue); font-weight: 700; }
+
+    /* QR block with caption */
+    .qr-wrap { margin-top: 6px; display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: center; }
+    .qr { width: 22mm; height: 22mm; border-radius: 4px; background: #fff; border: 1px solid #e5e7eb; }
+    .qr-note { font-size: 9px; color: #666; }
+
+    /* right column: validity + signature */
+    .right-col { display: grid; gap: 10px; align-content: start; }
+    .valid-box { text-align: right; }
+    .valid-box .label { font-size: 10px; color: #475569; }
+    .valid-box .value { font-weight: 800; color: var(--blue); font-size: 12px; }
+
+    .sign { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+    .sign .sig { max-height: 12mm; width: auto; margin: 2mm 0 1mm; }
+    .sign .line { width: 34mm; border-top: .3mm solid #cbd5e1; margin: 1mm 0 0; }
+    .sign .name { font-weight: 800; color: var(--blue); font-size: 11px; margin: 1mm 0 0; }
+    .sign small { font-size: 9px; color: #555; }
+
+    /* optional faint watermark on the back */
+    .face.back::before{
+      content:""; position:absolute; right:8mm; top:16mm; width:26mm; height:26mm;
+      background: url('/glc-logo.jpg') center/contain no-repeat;
+      opacity:.06; filter:grayscale(100%); pointer-events:none;
+    }
+
     @media print {
       @page { size: auto; margin: 0; }
 
@@ -690,22 +728,39 @@
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
-                    <div class="contact">
-                      <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
-                      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-                      <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
-                      <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
-                      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-                    </div>
-                    <div class="bottom-row">
-                      <div class="qr" id="qr-${currentStudentIndex}"></div>
-                      <div class="sign">
-                        <p>Director’s Signature:</p>
-                        <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
-                        <p class="name">${utils.sanitize(student.director) || '—'}</p>
-                      </div>
-                    </div>
-                  </div>
+  <!-- LEFT: contact + QR -->
+  <div>
+    <div class="contact">
+      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+      <p class="kv"><strong>Phone:</strong>   <span>${utils.sanitize(student.phone)   || '—'}</span></p>
+      <p class="kv"><strong>Email:</strong>   <span>${utils.sanitize(student.email)   || '—'}</span></p>
+      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+    </div>
+
+    <div class="qr-wrap">
+      <!-- In preview & DOM-print versions use id="qr-${INDEX}".
+           In the image-capture version use class="qr" only (no id),
+           because the QR is instantiated inline before capturing. -->
+      <div class="qr" id="qr-${currentStudentIndex}"></div>
+      <div class="qr-note">Scan to verify this ID.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: validity + signature -->
+  <div class="right-col">
+    <div class="valid-box">
+      <div class="label">Valid Until</div>
+      <div class="value">${utils.fmtDate(student.valid)}</div>
+    </div>
+
+    <div class="sign">
+      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+      <div class="line"></div>
+      <p class="name">${utils.sanitize(student.director) || '—'}</p>
+      <small>Director’s Signature</small>
+    </div>
+  </div>
+</div>
                   <footer class="footer">
                     IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
                   </footer>
@@ -769,22 +824,39 @@
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
-                    <div class="contact">
-                      <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
-                      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-                      <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
-                      <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
-                      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-                    </div>
-                    <div class="bottom-row">
-                      <div class="qr"></div>
-                      <div class="sign">
-                        <p>Director’s Signature:</p>
-                        <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
-                        <p class="name">${utils.sanitize(student.director) || '—'}</p>
-                      </div>
-                    </div>
-                  </div>
+  <!-- LEFT: contact + QR -->
+  <div>
+    <div class="contact">
+      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+      <p class="kv"><strong>Phone:</strong>   <span>${utils.sanitize(student.phone)   || '—'}</span></p>
+      <p class="kv"><strong>Email:</strong>   <span>${utils.sanitize(student.email)   || '—'}</span></p>
+      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+    </div>
+
+    <div class="qr-wrap">
+      <!-- In preview & DOM-print versions use id="qr-${INDEX}".
+           In the image-capture version use class="qr" only (no id),
+           because the QR is instantiated inline before capturing. -->
+      <div class="qr"></div>
+      <div class="qr-note">Scan to verify this ID.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: validity + signature -->
+  <div class="right-col">
+    <div class="valid-box">
+      <div class="label">Valid Until</div>
+      <div class="value">${utils.fmtDate(student.valid)}</div>
+    </div>
+
+    <div class="sign">
+      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+      <div class="line"></div>
+      <p class="name">${utils.sanitize(student.director) || '—'}</p>
+      <small>Director’s Signature</small>
+    </div>
+  </div>
+</div>
                   <footer class="footer">
                     IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
                   </footer>
@@ -867,22 +939,39 @@
                           <h3>GREAT LANDMARK COLLEGE</h3>
                         </header>
                         <div class="body-back">
-                          <div class="contact">
-                            <p class="kv"><strong>Valid Until:</strong> <span>${utils.fmtDate(student.valid)}</span></p>
-                            <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-                            <p class="kv"><strong>Phone:</strong> <span>${utils.sanitize(student.phone) || '—'}</span></p>
-                            <p class="kv"><strong>Email:</strong> <span>${utils.sanitize(student.email) || '—'}</span></p>
-                            <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-                          </div>
-                          <div class="bottom-row">
-                            <div class="qr" id="print-qr-${globalIndex}"></div>
-                            <div class="sign">
-                              <p>Director’s Signature:</p>
-                              <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
-                              <p class="name">${utils.sanitize(student.director) || '—'}</p>
-                            </div>
-                          </div>
-                        </div>
+  <!-- LEFT: contact + QR -->
+  <div>
+    <div class="contact">
+      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
+      <p class="kv"><strong>Phone:</strong>   <span>${utils.sanitize(student.phone)   || '—'}</span></p>
+      <p class="kv"><strong>Email:</strong>   <span>${utils.sanitize(student.email)   || '—'}</span></p>
+      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
+    </div>
+
+    <div class="qr-wrap">
+      <!-- In preview & DOM-print versions use id="qr-${INDEX}".
+           In the image-capture version use class="qr" only (no id),
+           because the QR is instantiated inline before capturing. -->
+      <div class="qr" id="print-qr-${globalIndex}"></div>
+      <div class="qr-note">Scan to verify this ID.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: validity + signature -->
+  <div class="right-col">
+    <div class="valid-box">
+      <div class="label">Valid Until</div>
+      <div class="value">${utils.fmtDate(student.valid)}</div>
+    </div>
+
+    <div class="sign">
+      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+      <div class="line"></div>
+      <p class="name">${utils.sanitize(student.director) || '—'}</p>
+      <small>Director’s Signature</small>
+    </div>
+  </div>
+</div>
                         <footer class="footer">
                           IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
                         </footer>
