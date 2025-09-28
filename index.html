@@ -8,6 +8,9 @@
   <!-- QR + html2canvas (CDNs) -->
   <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.10/dist/easy.qrcode.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -22,8 +25,8 @@
       --focus: #5b9dd9;
       --page-w: 210mm;   /* default A4 */
       --page-h: 297mm;
-      --bottom-row-h: 18mm;   /* fixed height for QR+signature row */
-      --qr-size: 18mm;        /* shared size for the QR box */
+      --bottom-row-h: 16mm;   /* a bit shorter so header+body+footer fit */
+      --qr-size: 18mm;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -106,12 +109,13 @@
     .face {
       position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,.18); background: #fff;
-      display: flex; flex-direction: column; overflow: hidden; color: #333;
+      display: grid;
+      grid-template-rows: 40px 1fr auto;  /* header | body | footer */
+      overflow: hidden; color: #333;
       outline: 2px solid transparent;
     }
     .face:focus { outline: 2px solid var(--focus); outline-offset: 3px; }
     .back { transform: rotateY(180deg); }
-    .face.back{ overflow: hidden; }
 
     .id-card-header {
       background: var(--blue); color: #fff; padding: 8px 14px; display: flex;
@@ -137,17 +141,15 @@
     .kv { font-size: 11px; margin: 3px 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
 
-    /* Back layout grid */
     .body-back{
+      grid-row: 2;
       display: grid;
-      grid-template-columns: 1fr 1fr;            /* QR left | signature right */
-      grid-template-rows: auto 1fr var(--bottom-row-h); /* meta | free | bottom row */
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto 1fr var(--bottom-row-h);
       gap: 2mm 4mm;
       padding: 6mm 6mm 5mm;
-      overflow: hidden;                           /* prevent bleed */
+      overflow: hidden;
     }
-
-    /* Meta block */
     .meta{
       grid-column: 1 / -1;
       text-align: center;
@@ -157,7 +159,6 @@
     }
     .meta .title{ font-weight: 800; margin-bottom: 1mm; }
 
-    /* QR fits the bottom row */
     .qr{
       grid-column: 1; grid-row: 3;
       justify-self: start;
@@ -168,26 +169,30 @@
     }
     .qr canvas{ width:100% !important; height:100% !important; }
 
-    /* Signature block pinned bottom-right */
     .sign{
       grid-column: 2; grid-row: 3;
-      place-self: end end;                        /* bottom-right */
+      place-self: end end;
       text-align: right;
-      display: flex; flex-direction: column;
-      align-items: flex-end; justify-content: flex-end;
+      display:flex; flex-direction:column;
+      align-items:flex-end; justify-content:flex-end;
       gap: 2mm;
       font-size: 3mm; line-height: 1.2;
       max-width: 40mm;
     }
-    .sign p{ margin: 0; }
+    .sign p{ margin:0; }
 
-    /* Signature image sized to the row height (caption + gaps accounted) */
     .sign .sig{
-      max-height: calc(var(--bottom-row-h) - 6mm);
-      width: auto; object-fit: contain; display: block;
+      font-family: "Great Vibes", cursive;
+      font-weight: 400;
+      font-size: clamp(10mm, 4.2vw, 12mm); /* scales but capped by row height */
+      line-height: 1;
+      white-space: nowrap;
+      transform: translateY(0.5mm);        /* tiny optical nudge */
+      max-width: 34mm;                      /* keep inside the line width */
+      overflow: hidden; text-overflow: ellipsis;
+      border: 0; background: transparent;   /* just in case */
     }
 
-    /* Signature line */
     .sign .line{
       width: 34mm;
       border-top: .3mm solid #cbd5e1;
@@ -438,7 +443,6 @@
       const CONFIG = {
         defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
         defaultLogo: '/glc-logo.jpg',
-        defaultSignature: '/director-signature.jpg',
         qrSize: 66,
         captureScale: 2,
         debounceDelay: 300,
@@ -652,7 +656,6 @@
         async preloadLogos() {
           try {
             await utils.preloadImage(CONFIG.defaultLogo);
-            await utils.preloadImage(CONFIG.defaultSignature);
           } catch (err) {
             console.error('Failed to preload logos:', err);
           }
@@ -780,7 +783,7 @@
                     <div class="qr" id="qr-${currentStudentIndex}"></div>
                     <div class="sign">
                       <p>Director’s Signature:</p>
-                      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+                      <div class="sig">${utils.sanitize(student.director || '')}</div>
                       <div class="line"></div>
                     </div>
                   </div>
@@ -837,7 +840,7 @@
                   </footer>
                 </section>
               `;
-              await new Promise(r => requestAnimationFrame(r));
+              await document.fonts.ready;
               const frontUrl = await html2canvas(tempContainer.firstChild, {
                 scale: CONFIG.captureScale,
                 useCORS: true,
@@ -863,7 +866,7 @@
                     <div class="qr"></div>
                     <div class="sign">
                       <p>Director’s Signature:</p>
-                      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+                      <div class="sig">${utils.sanitize(student.director || '')}</div>
                       <div class="line"></div>
                     </div>
                   </div>
@@ -882,7 +885,7 @@
                 colorLight: "#fff",
                 correctLevel: QRCode.CorrectLevel.H
               });
-              await new Promise(r => requestAnimationFrame(r));
+              await document.fonts.ready;
               const backUrl = await html2canvas(tempContainer.firstChild, {
                 scale: CONFIG.captureScale,
                 useCORS: true,
@@ -964,7 +967,7 @@
                           <div class="qr" id="print-qr-${globalIndex}"></div>
                           <div class="sign">
                             <p>Director’s Signature:</p>
-                            <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+                            <div class="sig">${utils.sanitize(student.director || '')}</div>
                             <div class="line"></div>
                           </div>
                         </div>
