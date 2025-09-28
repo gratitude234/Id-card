@@ -134,22 +134,35 @@
     .kv { font-size: 11px; margin: 3px 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
 
-    .body-back { padding: 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-    .contact p { font-size: 11px; margin: 3px 0; }
-    .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
-
-    .bottom-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: auto; }
-    .qr { width: 66px; height: 66px; border: 1px solid #ddd; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .qr canvas { width: 100% !important; height: 100% !important; object-fit: contain; }
-    .sign { text-align: right; font-size: 11px; line-height: 1.25; flex: 1; }
-    .sign p { margin: 0; }
-    .sign .name { font-weight: 800; color: var(--blue); font-size: 12px; margin-top: 2px; }
-    .sign .sig {
-      max-height: 20px;
-      width: auto;
-      display: block;
-      margin: 2px 0;
+    .body-back{
+      display:grid;
+      grid-template-columns: 1fr 1fr;        /* left = QR, right = signature */
+      grid-template-rows: auto 1fr auto;     /* meta, free space, footer row area */
+      gap: 2.5mm 4mm;
+      padding: 6mm 6mm 5mm;
     }
+    .meta{
+      grid-column: 1 / -1;
+      text-align: center;
+      font-size: 3.2mm;
+      line-height: 1.35;
+    }
+    .meta .title{ font-weight: 800; margin-bottom: 1.5mm; }
+    .qr{ 
+      grid-column: 1; grid-row: 3; justify-self: start;
+      width: 22mm; height: 22mm;
+      border: .3mm solid #ddd; border-radius: 1.5mm;
+      display:flex; align-items:center; justify-content:center; overflow:hidden;
+    }
+    .qr canvas{ width:100% !important; height:100% !important; }
+    .sign{
+      grid-column: 2; grid-row: 3; justify-self: end; text-align: right;
+      font-size: 3mm; line-height: 1.25; display:flex; flex-direction:column; align-items:flex-end;
+    }
+    .sign .sig{ max-height: 12mm; width:auto; margin: 2mm 0 1mm; }
+    .sign .line{ width: 34mm; border-top: .3mm solid #cbd5e1; }
+
+    .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
 
     .print-page { display: none; width: var(--page-w); height: var(--page-h); }
     .front-grid, .back-grid {
@@ -161,44 +174,6 @@
     .id-card-wrapper { width: 85.6mm; height: 54mm; }
     .id-card-container { transform: none; }
     .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
-
-    /* Back face layout */
-    .body-back {
-      padding: 10px 12px;
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 10px;
-      align-items: start;
-    }
-
-    /* left column: contact details + QR */
-    .contact { display: grid; gap: 6px; }
-    .contact .kv { font-size: 10.5px; margin: 0; line-height: 1.35; }
-    .contact .kv strong { min-width: 24mm; color: var(--blue); font-weight: 700; }
-
-    /* QR block with caption */
-    .qr-wrap { margin-top: 6px; display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: center; }
-    .qr { width: 22mm; height: 22mm; border-radius: 4px; background: #fff; border: 1px solid #e5e7eb; }
-    .qr-note { font-size: 9px; color: #666; }
-
-    /* right column: validity + signature */
-    .right-col { display: grid; gap: 10px; align-content: start; }
-    .valid-box { text-align: right; }
-    .valid-box .label { font-size: 10px; color: #475569; }
-    .valid-box .value { font-weight: 800; color: var(--blue); font-size: 12px; }
-
-    .sign { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-    .sign .sig { max-height: 12mm; width: auto; margin: 2mm 0 1mm; }
-    .sign .line { width: 34mm; border-top: .3mm solid #cbd5e1; margin: 1mm 0 0; }
-    .sign .name { font-weight: 800; color: var(--blue); font-size: 11px; margin: 1mm 0 0; }
-    .sign small { font-size: 9px; color: #555; }
-
-    /* optional faint watermark on the back */
-    .face.back::before{
-      content:""; position:absolute; right:8mm; top:16mm; width:26mm; height:26mm;
-      background: url('/glc-logo.jpg') center/contain no-repeat;
-      opacity:.06; filter:grayscale(100%); pointer-events:none;
-    }
 
     @media print {
       @page { size: auto; margin: 0; }
@@ -598,7 +573,7 @@
               return dataUrl;
             }
             const url = elements.fields.photoUrl.value.trim();
-            if (url && utils.isSafeUrl(url)) {
+            if (url && utils.isSafeUrl(url) ) {
               await utils.preloadImage(url);
               students[currentStudentIndex].photo = url;
               return url;
@@ -728,39 +703,20 @@
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
-  <!-- LEFT: contact + QR -->
-  <div>
-    <div class="contact">
-      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-      <p class="kv"><strong>Phone:</strong>   <span>${utils.sanitize(student.phone)   || '—'}</span></p>
-      <p class="kv"><strong>Email:</strong>   <span>${utils.sanitize(student.email)   || '—'}</span></p>
-      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-    </div>
-
-    <div class="qr-wrap">
-      <!-- In preview & DOM-print versions use id="qr-${INDEX}".
-           In the image-capture version use class="qr" only (no id),
-           because the QR is instantiated inline before capturing. -->
-      <div class="qr" id="qr-${currentStudentIndex}"></div>
-      <div class="qr-note">Scan to verify this ID.</div>
-    </div>
-  </div>
-
-  <!-- RIGHT: validity + signature -->
-  <div class="right-col">
-    <div class="valid-box">
-      <div class="label">Valid Until</div>
-      <div class="value">${utils.fmtDate(student.valid)}</div>
-    </div>
-
-    <div class="sign">
-      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
-      <div class="line"></div>
-      <p class="name">${utils.sanitize(student.director) || '—'}</p>
-      <small>Director’s Signature</small>
-    </div>
-  </div>
-</div>
+                    <div class="meta">
+                      <div class="title">Valid Until: ${utils.fmtDate(student.valid)}</div>
+                      <div>Address: ${utils.sanitize(student.address) || '—'}</div>
+                      <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
+                      <div>Email: ${utils.sanitize(student.email) || '—'}</div>
+                      <div>Website: www.greatlandmarkcollege.org</div>
+                    </div>
+                    <div class="qr" id="qr-${currentStudentIndex}"></div>
+                    <div class="sign">
+                      <p>Director’s Signature:</p>
+                      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+                      <div class="line"></div>
+                    </div>
+                  </div>
                   <footer class="footer">
                     IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
                   </footer>
@@ -824,39 +780,20 @@
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
-  <!-- LEFT: contact + QR -->
-  <div>
-    <div class="contact">
-      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-      <p class="kv"><strong>Phone:</strong>   <span>${utils.sanitize(student.phone)   || '—'}</span></p>
-      <p class="kv"><strong>Email:</strong>   <span>${utils.sanitize(student.email)   || '—'}</span></p>
-      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-    </div>
-
-    <div class="qr-wrap">
-      <!-- In preview & DOM-print versions use id="qr-${INDEX}".
-           In the image-capture version use class="qr" only (no id),
-           because the QR is instantiated inline before capturing. -->
-      <div class="qr"></div>
-      <div class="qr-note">Scan to verify this ID.</div>
-    </div>
-  </div>
-
-  <!-- RIGHT: validity + signature -->
-  <div class="right-col">
-    <div class="valid-box">
-      <div class="label">Valid Until</div>
-      <div class="value">${utils.fmtDate(student.valid)}</div>
-    </div>
-
-    <div class="sign">
-      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
-      <div class="line"></div>
-      <p class="name">${utils.sanitize(student.director) || '—'}</p>
-      <small>Director’s Signature</small>
-    </div>
-  </div>
-</div>
+                    <div class="meta">
+                      <div class="title">Valid Until: ${utils.fmtDate(student.valid)}</div>
+                      <div>Address: ${utils.sanitize(student.address) || '—'}</div>
+                      <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
+                      <div>Email: ${utils.sanitize(student.email) || '—'}</div>
+                      <div>Website: www.greatlandmarkcollege.org</div>
+                    </div>
+                    <div class="qr"></div>
+                    <div class="sign">
+                      <p>Director’s Signature:</p>
+                      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+                      <div class="line"></div>
+                    </div>
+                  </div>
                   <footer class="footer">
                     IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
                   </footer>
@@ -939,39 +876,20 @@
                           <h3>GREAT LANDMARK COLLEGE</h3>
                         </header>
                         <div class="body-back">
-  <!-- LEFT: contact + QR -->
-  <div>
-    <div class="contact">
-      <p class="kv"><strong>Address:</strong> <span>${utils.sanitize(student.address) || '—'}</span></p>
-      <p class="kv"><strong>Phone:</strong>   <span>${utils.sanitize(student.phone)   || '—'}</span></p>
-      <p class="kv"><strong>Email:</strong>   <span>${utils.sanitize(student.email)   || '—'}</span></p>
-      <p class="kv"><strong>Website:</strong> <span>www.greatlandmarkcollege.org</span></p>
-    </div>
-
-    <div class="qr-wrap">
-      <!-- In preview & DOM-print versions use id="qr-${INDEX}".
-           In the image-capture version use class="qr" only (no id),
-           because the QR is instantiated inline before capturing. -->
-      <div class="qr" id="print-qr-${globalIndex}"></div>
-      <div class="qr-note">Scan to verify this ID.</div>
-    </div>
-  </div>
-
-  <!-- RIGHT: validity + signature -->
-  <div class="right-col">
-    <div class="valid-box">
-      <div class="label">Valid Until</div>
-      <div class="value">${utils.fmtDate(student.valid)}</div>
-    </div>
-
-    <div class="sign">
-      <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
-      <div class="line"></div>
-      <p class="name">${utils.sanitize(student.director) || '—'}</p>
-      <small>Director’s Signature</small>
-    </div>
-  </div>
-</div>
+                          <div class="meta">
+                            <div class="title">Valid Until: ${utils.fmtDate(student.valid)}</div>
+                            <div>Address: ${utils.sanitize(student.address) || '—'}</div>
+                            <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
+                            <div>Email: ${utils.sanitize(student.email) || '—'}</div>
+                            <div>Website: www.greatlandmarkcollege.org</div>
+                          </div>
+                          <div class="qr" id="print-qr-${globalIndex}"></div>
+                          <div class="sign">
+                            <p>Director’s Signature:</p>
+                            <img class="sig" src="${CONFIG.defaultSignature}" alt="Director’s signature" crossorigin="anonymous">
+                            <div class="line"></div>
+                          </div>
+                        </div>
                         <footer class="footer">
                           IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
                         </footer>
