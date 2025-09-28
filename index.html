@@ -140,6 +140,7 @@
       grid-template-rows: auto 1fr auto;     /* meta, free space, footer row area */
       gap: 2.5mm 4mm;
       padding: 6mm 6mm 5mm;
+      overflow: visible;
     }
     .meta{
       grid-column: 1 / -1;
@@ -152,15 +153,36 @@
       grid-column: 1; grid-row: 3; justify-self: start;
       width: 22mm; height: 22mm;
       border: .3mm solid #ddd; border-radius: 1.5mm;
-      display:flex; align-items:center; justify-content:center; overflow:visible;
+      display:flex; align-items:center; justify-content:center; overflow: visible;
     }
     .qr canvas{ width:100% !important; height:100% !important; }
     .sign{
-      grid-column: 2; grid-row: 3; justify-self: end; text-align: right;
-      font-size: 3mm; line-height: 1.25; display:flex; flex-direction:column; align-items:flex-end;
+      grid-column: 2;
+      grid-row: 3;               /* bottom row of the grid */
+      place-self: end end;       /* bottom-right corner */
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end; /* keeps image + line grouped at the bottom */
+      gap: 2mm;                  /* tidy spacing between caption, image, and line */
+      font-size: 3mm;
+      line-height: 1.25;
     }
-    .sign .sig{ max-height:12mm; width:auto; object-fit:contain; margin: 2mm 0 1mm; }
-    .sign .line{ width: 34mm; border-top: .3mm solid #cbd5e1; }
+    .sign p{ margin: 0; }
+    .sign .sig{
+      max-height: 9.5mm;         /* small enough to never clip */
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .sign .line{
+      width: 34mm;               /* matches design */
+      border-top: .3mm solid #cbd5e1;
+    }
+    .face.back {
+      overflow: visible;
+    }
 
     .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
 
@@ -504,7 +526,7 @@
       };
 
       function computeValidDate(years) {
-        const today = new Date(2025, 8, 28); // September 28, 2025
+        const today = new Date();
         const valid = new Date(today);
         valid.setFullYear(today.getFullYear() + years);
         return valid.toISOString().split('T')[0];
@@ -806,6 +828,7 @@
                   </footer>
                 </section>
               `;
+              await new Promise(r => requestAnimationFrame(r));
               const frontUrl = await html2canvas(tempContainer.firstChild, {
                 scale: CONFIG.captureScale,
                 useCORS: true,
@@ -850,6 +873,7 @@
                 colorLight: "#fff",
                 correctLevel: QRCode.CorrectLevel.H
               });
+              await new Promise(r => requestAnimationFrame(r));
               const backUrl = await html2canvas(tempContainer.firstChild, {
                 scale: CONFIG.captureScale,
                 useCORS: true,
