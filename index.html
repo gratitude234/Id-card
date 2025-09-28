@@ -152,14 +152,14 @@
       grid-column: 1; grid-row: 3; justify-self: start;
       width: 22mm; height: 22mm;
       border: .3mm solid #ddd; border-radius: 1.5mm;
-      display:flex; align-items:center; justify-content:center; overflow:hidden;
+      display:flex; align-items:center; justify-content:center; overflow:visible;
     }
     .qr canvas{ width:100% !important; height:100% !important; }
     .sign{
       grid-column: 2; grid-row: 3; justify-self: end; text-align: right;
       font-size: 3mm; line-height: 1.25; display:flex; flex-direction:column; align-items:flex-end;
     }
-    .sign .sig{ max-height: 12mm; width:auto; margin: 2mm 0 1mm; }
+    .sign .sig{ max-height:12mm; width:auto; object-fit:contain; margin: 2mm 0 1mm; }
     .sign .line{ width: 34mm; border-top: .3mm solid #cbd5e1; }
 
     .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
@@ -226,6 +226,11 @@
       .id-card-header h3 { font-size: 14px; }
       .kv { font-size: 10px; }
       .footer { font-size: 8px; }
+      .meta { font-size: 10px; }
+      .qr { width: 50px; height: 50px; }
+      .sign { font-size: 10px; }
+      .sign .sig { max-height: 30px; }
+      .sign .line { width: 80px; }
     }
 
     @media (max-width: 480px) {
@@ -234,7 +239,8 @@
       .photo { width: 60px; height: 60px; }
       .qr { width: 50px; height: 50px; }
       .sign { font-size: 10px; }
-      .name { font-size: 11px; }
+      .sign .sig { max-height: 30px; }
+      .sign .line { width: 80px; }
     }
 
     .notes { font-size: 12px; color: #666; text-align: center; margin-top: 8px; }
@@ -295,9 +301,14 @@
 
           <div class="col-6">
             <div class="form-group">
-              <label for="validUntil">Valid Until</label>
-              <input id="validUntil" type="date" required value="2025-07-31" aria-describedby="errValid" />
-              <div class="error-text" id="errValid" aria-live="assertive">Please select a valid date.</div>
+              <label for="validForYears">Valid For</label>
+              <select id="validForYears">
+                <option value="1">1 year</option>
+                <option value="2">2 years</option>
+                <option value="3">3 years</option>
+                <option value="4">4 years</option>
+                <option value="5">5 years</option>
+              </select>
             </div>
           </div>
 
@@ -306,6 +317,14 @@
               <label for="director">Director’s Name (for signature)</label>
               <input id="director" type="text" required value="OLANIBI GREAT-GOD" aria-describedby="errDir" />
               <div class="error-text" id="errDir" aria-live="assertive">Please enter a name.</div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="form-group">
+              <label for="showDob">
+                <input type="checkbox" id="showDob" checked> Show Date of Birth on card
+              </label>
             </div>
           </div>
 
@@ -403,8 +422,9 @@
           adm: document.getElementById('admissionNo'),
           klass: document.getElementById('klass'),
           dob: document.getElementById('dob'),
-          valid: document.getElementById('validUntil'),
+          validForYears: document.getElementById('validForYears'),
           director: document.getElementById('director'),
+          showDob: document.getElementById('showDob'),
           photoUrl: document.getElementById('photoUrl'),
           photoFile: document.getElementById('photoFile'),
           phone: document.getElementById('phone'),
@@ -417,8 +437,6 @@
           adm: document.getElementById('errAdm'),
           klass: document.getElementById('errClass'),
           dob: document.getElementById('errDob'),
-          valid: document.getElementById('errValid'),
-          photo: document.getElementById('errPhoto'),
           director: document.getElementById('errDir'),
           studentSelect: document.getElementById('errStudentSelect')
         },
@@ -442,8 +460,10 @@
         adm: 'GLC/2025/001',
         klass: 'SS1 A',
         dob: '2009-09-15',
-        valid: '2025-07-31',
+        validForYears: 1,
+        valid: '2026-09-28',
         director: 'OLANIBI GREAT-GOD',
+        showDob: true,
         photo: CONFIG.defaultPhoto,
         phone: '+234 801 123 4567',
         email: 'info@greatlandmarkcollege.org',
@@ -483,6 +503,13 @@
         }
       };
 
+      function computeValidDate(years) {
+        const today = new Date(2025, 8, 28); // September 28, 2025
+        const valid = new Date(today);
+        valid.setFullYear(today.getFullYear() + years);
+        return valid.toISOString().split('T')[0];
+      }
+
       // State Management
       const state = {
         save() {
@@ -516,7 +543,9 @@
         updateForm() {
           const student = students[currentStudentIndex] || {};
           Object.entries(elements.fields).forEach(([k, el]) => {
-            if (k !== 'studentSelect' && k !== 'photoFile') {
+            if (k === 'showDob') {
+              el.checked = student.showDob !== false; // default true
+            } else if (k !== 'studentSelect' && k !== 'photoFile') {
               el.value = student[k] || '';
             }
           });
@@ -573,7 +602,7 @@
               return dataUrl;
             }
             const url = elements.fields.photoUrl.value.trim();
-            if (url && utils.isSafeUrl(url) ) {
+            if (url && utils.isSafeUrl(url)) {
               await utils.preloadImage(url);
               students[currentStudentIndex].photo = url;
               return url;
@@ -603,7 +632,10 @@
       const qr = {
         render(index) {
           const student = students[index] || {};
-          const text = `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org`;
+          let text = `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org`;
+          if (student.showDob) {
+            text += `\nDate of Birth: ${utils.fmtDate(student.dob)}`;
+          }
           const qrWraps = [
             document.querySelector(`#qr-${index}`),
             document.querySelector(`#print-qr-${index}`)
@@ -636,10 +668,9 @@
         },
         validateDates() {
           const dob = new Date(elements.fields.dob.value);
-          const valid = new Date(elements.fields.valid.value);
+          const valid = new Date(students[currentStudentIndex].valid);
           if (dob >= valid) {
-            utils.showErr(elements.errors.valid, true, 'Valid Until must be after Date of Birth.');
-            elements.fields.valid.parentElement.classList.add('invalid');
+            alert('Valid Until must be after Date of Birth.');
             return false;
           }
           return true;
@@ -650,13 +681,15 @@
             adm: elements.fields.adm.value,
             klass: elements.fields.klass.value,
             dob: elements.fields.dob.value,
-            valid: elements.fields.valid.value,
+            validForYears: parseInt(elements.fields.validForYears.value),
             director: elements.fields.director.value,
+            showDob: elements.fields.showDob.checked,
             photo: students[currentStudentIndex]?.photo || CONFIG.defaultPhoto,
             phone: elements.fields.phone.value,
             email: elements.fields.email.value,
             address: elements.fields.address.value
           };
+          students[currentStudentIndex].valid = computeValidDate(students[currentStudentIndex].validForYears);
         },
         async updatePreview() {
           this.updateStudentData();
@@ -665,7 +698,6 @@
             this.validateField(elements.fields.adm, elements.errors.adm, elements.fields.adm.pattern),
             this.validateField(elements.fields.klass, elements.errors.klass),
             this.validateField(elements.fields.dob, elements.errors.dob),
-            this.validateField(elements.fields.valid, elements.errors.valid),
             this.validateField(elements.fields.director, elements.errors.director),
             this.validateDates()
           ].every(Boolean);
@@ -673,6 +705,10 @@
           // Preview only the current student
           elements.idStage.innerHTML = '';
           const student = students[currentStudentIndex];
+          let dobHtml = '';
+          if (student.showDob) {
+            dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
+          }
           elements.idStage.insertAdjacentHTML('beforeend', `
             <div class="id-card-wrapper" aria-label="ID card preview">
               <div class="id-card-container" id="card-${currentStudentIndex}">
@@ -690,7 +726,7 @@
                       <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
+                      ${dobHtml}
                     </div>
                   </div>
                   <footer class="footer">
@@ -738,9 +774,14 @@
             tempContainer.style.top = '0';
             tempContainer.style.width = '85.6mm';
             tempContainer.style.height = '54mm';
+            tempContainer.style.overflow = 'visible';
             document.body.appendChild(tempContainer);
             for (let i = 0; i < students.length; i++) {
               const student = students[i];
+              let dobHtml = '';
+              if (student.showDob) {
+                dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
+              }
               // Capture front
               tempContainer.innerHTML = `
                 <section class="face front">
@@ -757,7 +798,7 @@
                       <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
+                      ${dobHtml}
                     </div>
                   </div>
                   <footer class="footer">
@@ -802,7 +843,7 @@
               const qrWrap = tempContainer.querySelector('.qr');
               qrWrap.innerHTML = '';
               new QRCode(qrWrap, {
-                text: `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org`,
+                text: `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org` + (student.showDob ? `\nDate of Birth: ${utils.fmtDate(student.dob)}` : ''),
                 width: CONFIG.qrSize,
                 height: CONFIG.qrSize,
                 colorDark: "#000",
@@ -827,6 +868,10 @@
             let backHtml = '<div class="back-grid">';
             pageStudents.forEach((student, index) => {
               const globalIndex = i + index;
+              let dobHtml = '';
+              if (student.showDob) {
+                dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
+              }
               if (useImages) {
                 const {front, back} = dataUrls[globalIndex];
                 frontHtml += `
@@ -857,7 +902,7 @@
                             <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                             <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                             <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                            <p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>
+                            ${dobHtml}
                           </div>
                         </div>
                         <footer class="footer">
@@ -1057,7 +1102,8 @@
 
           elements.tools.addStudentBtn.addEventListener('click', () => {
             students.push({
-              name: '', adm: '', klass: '', dob: '', valid: '', director: '',
+              name: '', adm: '', klass: '', dob: '', validForYears: 1, valid: computeValidDate(1), director: '',
+              showDob: true,
               photo: CONFIG.defaultPhoto, phone: '', email: '', address: ''
             });
             currentStudentIndex = students.length - 1;
