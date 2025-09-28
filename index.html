@@ -144,8 +144,8 @@
     .body-back{
       grid-row: 2;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto 1fr var(--bottom-row-h);
+      grid-template-columns: 1fr 1fr;            /* QR left | signature right */
+      grid-template-rows: auto 1fr var(--bottom-row-h); /* meta | free | bottom row */
       gap: 2mm 4mm;
       padding: 6mm 6mm 5mm;
       overflow: hidden;
@@ -164,7 +164,7 @@
       justify-self: start;
       width: var(--qr-size); height: var(--qr-size);
       border: .3mm solid #ddd; border-radius: 1.5mm;
-      display: flex; align-items: center; justify-content: center;
+      display:flex; align-items:center; justify-content:center;
       overflow: hidden;
     }
     .qr canvas{ width:100% !important; height:100% !important; }
