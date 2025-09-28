@@ -279,6 +279,29 @@
       .sign .line { width: 80px; }
     }
 
+/* 1) Make the footer its own grid row explicitly */
+.face { display: grid; grid-template-rows: 40px 1fr auto; }
+.body-back { grid-row: 2; }
+.footer { grid-row: 3; z-index: 0; }
+
+/* 2) Give the bottom row more room and hard-cap the signature to fit */
+:root { --bottom-row-h: 20mm; } /* was 16mm */
+
+.sign { max-height: var(--bottom-row-h); overflow: hidden; }
+.sign .sig{
+  /* reserve ~7mm for the caption, gaps, and line */
+  font-size: clamp(5mm, calc(var(--bottom-row-h) - 7mm), 10mm);
+  max-width: 34mm;
+}
+
+/* Optional: tiny spacing tweak so the caption doesn't steal height */
+.sign p { margin: 0 0 1mm 0; }
+
+/* 3) Remove/override old mobile caps from the image version */
+@media (max-width: 768px), (max-width: 480px){
+  .sign .sig { max-height: none; }
+}
+
 .sign .sig { max-height: none; }
 
     .notes { font-size: 12px; color: #666; text-align: center; margin-top: 8px; }
