@@ -142,23 +142,66 @@
     .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
 
     .body-back{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      grid-template-rows:auto var(--bottom-row-h);
-      gap:3mm 6mm;
-      padding:6mm 6mm 5mm;
-      align-items:end;
-      overflow:hidden;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto 1fr var(--bottom-row-h);
+      gap: 2mm 4mm;
+      padding: 6mm 6mm 5mm;
+      overflow: hidden;
     }
-    .meta{ grid-column:1 / -1; text-align:center; font-size:3.2mm; line-height:1.35; margin:0; }
-    .bottom{ grid-column:1 / -1; display:grid; grid-template-columns:1fr 1fr; align-items:end; }
-    .qr{ justify-self:start; width:var(--qr-size); height:var(--qr-size); border:.3mm solid #ddd; border-radius:1.5mm; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .meta{
+      grid-column: 1 / -1;
+      text-align: center;
+      font-size: 3.2mm;
+      line-height: 1.3;
+      margin: 0;                                  /* keep compact */
+    }
+    .meta .title{ font-weight: 800; margin-bottom: 1mm; }
+
+    .qr{
+      grid-column: 1; grid-row: 3;
+      justify-self: start;
+      width: var(--qr-size); height: var(--qr-size);
+      border: .3mm solid #ddd; border-radius: 1.5mm;
+      display:flex; align-items:center; justify-content:center;
+      overflow: hidden;
+    }
     .qr canvas{ width:100% !important; height:100% !important; }
 
-    .sign{ justify-self:end; text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:2mm; max-width:45mm; }
-    .sign p{ margin:0 0 1mm 0; font-size:3mm; line-height:1.2; }
-    .sign .sig{ font-family:"Great Vibes",cursive; font-weight:400; font-size:9mm; line-height:1; white-space:nowrap; transform:translateY(.2mm); max-width:100%; overflow:hidden; text-overflow:ellipsis; }
-    .sign .line{ width:100%; border-top:.3mm solid #cbd5e1; }
+    .sign{
+      grid-column: 2; grid-row: 3;
+      place-self: end end;
+      text-align: right;
+      display:flex; flex-direction:column;
+      align-items:flex-end; justify-content:flex-end;
+      gap: 2mm;
+      font-size: 3mm; line-height: 1.2;
+      max-width: 40mm;
+      max-height: var(--bottom-row-h);
+      overflow: hidden;
+    }
+    .sign p{ margin: 0 0 1mm 0; }
+
+    .sign .sig{
+      font-family:"Great Vibes",cursive;
+      font-weight:400;
+      /* reserves ~8mm for caption + gaps + line */
+      font-size:clamp(5mm, calc(var(--bottom-row-h) - 8mm), 9mm);
+      line-height:1;
+      white-space:nowrap;
+      transform:translateY(0.5mm);
+      max-width:34mm;
+      max-height:calc(var(--bottom-row-h) - 8mm);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      border:0; background:transparent;
+    }
+
+    .sign .line{
+      width: 34mm;
+      border-top: .3mm solid #cbd5e1;
+    }
 
     .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
 
@@ -742,13 +785,11 @@
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                       <div>Website: www.greatlandmarkcollege.org</div>
                     </div>
-                    <div class="bottom">
-                      <div class="qr" id="qr-${currentStudentIndex}"></div>
-                      <div class="sign">
-                        <p>Director’s Signature:</p>
-                        <div class="sig">${utils.sanitize(student.director || '')}</div>
-                        <div class="line"></div>
-                      </div>
+                    <div class="qr" id="qr-${currentStudentIndex}"></div>
+                    <div class="sign">
+                      <p>Director’s Signature:</p>
+                      <div class="sig" style="font-family:'Great Vibes', cursive; font-size: 9mm; line-height: 1; transform: translateY(0.5mm); white-space: nowrap; max-width: 34mm; overflow: hidden; text-overflow: ellipsis;">~ ${utils.sanitize(student.director || '')}</div>
+                      <div class="line"></div>
                     </div>
                   </div>
                   <footer class="footer">
@@ -827,13 +868,11 @@
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                       <div>Website: www.greatlandmarkcollege.org</div>
                     </div>
-                    <div class="bottom">
-                      <div class="qr"></div>
-                      <div class="sign">
-                        <p>Director’s Signature:</p>
-                        <div class="sig">${utils.sanitize(student.director || '')}</div>
-                        <div class="line"></div>
-                      </div>
+                    <div class="qr"></div>
+                    <div class="sign">
+                      <p>Director’s Signature:</p>
+                      <div class="sig" style="font-family:'Great Vibes', cursive; font-size: 9mm; line-height: 1; transform: translateY(0.5mm); white-space: nowrap; max-width: 34mm; overflow: hidden; text-overflow: ellipsis;">~ ${utils.sanitize(student.director || '')}</div>
+                      <div class="line"></div>
                     </div>
                   </div>
                   <footer class="footer">
@@ -930,13 +969,11 @@
                             <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                             <div>Website: www.greatlandmarkcollege.org</div>
                           </div>
-                          <div class="bottom">
-                            <div class="qr" id="print-qr-${globalIndex}"></div>
-                            <div class="sign">
-                              <p>Director’s Signature:</p>
-                              <div class="sig">${utils.sanitize(student.director || '')}</div>
-                              <div class="line"></div>
-                            </div>
+                          <div class="qr" id="print-qr-${globalIndex}"></div>
+                          <div class="sign">
+                            <p>Director’s Signature:</p>
+                            <div class="sig" style="font-family:'Great Vibes', cursive; font-size: 9mm; line-height: 1; transform: translateY(0.5mm); white-space: nowrap; max-width: 34mm; overflow: hidden; text-overflow: ellipsis;">~ ${utils.sanitize(student.director || '')}</div>
+                            <div class="line"></div>
                           </div>
                         </div>
                         <footer class="footer">
