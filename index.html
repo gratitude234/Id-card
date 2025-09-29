@@ -24,6 +24,9 @@
       --focus: #5b9dd9;
       --page-w: 210mm;   /* default A4 */
       --page-h: 297mm;
+      --duplex-rotate: 180deg;
+      --back-offset-x: 0mm;
+      --back-offset-y: 0mm;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -160,7 +163,7 @@
       display: grid; grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(2, 54mm);
       gap: 10mm; justify-content: center; align-content: start;
     }
-    .back-grid { transform: rotate(180deg); } /* Align backs for long-edge duplex */
+    .back-grid { transform: translate(var(--back-offset-x), var(--back-offset-y)) rotate(var(--duplex-rotate)); } /* Align backs for duplex */
     .id-card-wrapper { width: 85.6mm; height: 54mm; }
     .id-card-container { transform: none; }
     .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
@@ -275,9 +278,13 @@
 
           <div class="col-6">
             <div class="form-group">
-              <label for="dob">Date of Birth</label>
-              <input id="dob" type="date" required value="2009-09-15" aria-describedby="errDob" />
-              <div class="error-text" id="errDob" aria-live="assertive">Please select a valid date.</div>
+              <label for="gender">Gender</label>
+              <select id="gender" required aria-describedby="errGender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+              <div class="error-text" id="errGender" aria-live="assertive">Please select a gender.</div>
             </div>
           </div>
 
@@ -296,8 +303,8 @@
 
           <div class="col-12">
             <div class="form-group">
-              <label for="showDob">
-                <input type="checkbox" id="showDob" checked> Show Date of Birth on card
+              <label for="showGender">
+                <input type="checkbox" id="showGender" checked> Show Gender on card
               </label>
             </div>
           </div>
@@ -363,6 +370,19 @@
           <option value="Letter">Letter</option>
         </select>
       </label>
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Duplex Mode
+        <select id="duplexMode">
+          <option value="long">Long-edge (rotate 180°)</option>
+          <option value="short">Short-edge (no rotate)</option>
+        </select>
+      </label>
+      <label style="display: flex; align-items: center; font-size: 14px; color: #444;">
+        Back X offset: <input type="number" id="offsetX" value="0" step="0.1" style="width: 60px; margin-left: 5px;"> mm
+      </label>
+      <label style="display: flex; align-items: center; font-size: 14px; color: #444;">
+        Back Y offset: <input type="number" id="offsetY" value="0" step="0.1" style="width: 60px; margin-left: 5px;"> mm
+      </label>
     </div>
 
     <div class="id-stage" id="idStage">
@@ -393,9 +413,9 @@
           name: document.getElementById('studentName'),
           adm: document.getElementById('admissionNo'),
           klass: document.getElementById('klass'),
-          dob: document.getElementById('dob'),
+          gender: document.getElementById('gender'),
           validForYears: document.getElementById('validForYears'),
-          showDob: document.getElementById('showDob'),
+          showGender: document.getElementById('showGender'),
           photoUrl: document.getElementById('photoUrl'),
           photoFile: document.getElementById('photoFile'),
           phone: document.getElementById('phone'),
@@ -407,7 +427,7 @@
           name: document.getElementById('errName'),
           adm: document.getElementById('errAdm'),
           klass: document.getElementById('errClass'),
-          dob: document.getElementById('errDob'),
+          gender: document.getElementById('errGender'),
           studentSelect: document.getElementById('errStudentSelect')
         },
         tools: {
@@ -417,7 +437,10 @@
           imageMode: document.getElementById('imageMode'),
           resetBtn: document.getElementById('resetBtn'),
           addStudentBtn: document.getElementById('addStudentBtn'),
-          removeStudentBtn: document.getElementById('removeStudentBtn')
+          removeStudentBtn: document.getElementById('removeStudentBtn'),
+          duplexMode: document.getElementById('duplexMode'),
+          offsetX: document.getElementById('offsetX'),
+          offsetY: document.getElementById('offsetY')
         },
         idStage: document.getElementById('idStage'),
         printPages: document.getElementById('printPages'),
@@ -429,10 +452,10 @@
         name: 'ADEKUNLE SAMUEL',
         adm: 'GLC/2025/001',
         klass: 'SS1 A',
-        dob: '2009-09-15',
+        gender: 'Male',
         validForYears: 1,
         valid: '2026-09-28',
-        showDob: true,
+        showGender: true,
         photo: CONFIG.defaultPhoto,
         phone: '+234 801 123 4567',
         email: 'info@greatlandmarkcollege.org',
@@ -444,12 +467,6 @@
 
       // Utilities
       const utils = {
-        pad: n => n.toString().padStart(2, '0'),
-        fmtDate(iso) {
-          if (!iso) return '—';
-          const d = new Date(iso);
-          return Number.isNaN(d.getTime()) ? '—' : `${this.pad(d.getDate())}/${this.pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-        },
         sanitize(str) {
           return str.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
         },
@@ -511,8 +528,8 @@
         updateForm() {
           const student = students[currentStudentIndex] || {};
           Object.entries(elements.fields).forEach(([k, el]) => {
-            if (k === 'showDob') {
-              el.checked = student.showDob !== false; // default true
+            if (k === 'showGender') {
+              el.checked = student.showGender !== false; // default true
             } else if (k !== 'studentSelect' && k !== 'photoFile') {
               el.value = student[k] || '';
             }
@@ -605,23 +622,14 @@
           field.parentElement.classList.toggle('invalid', !isValid);
           return isValid;
         },
-        validateDates() {
-          const dob = new Date(elements.fields.dob.value);
-          const valid = new Date(students[currentStudentIndex].valid);
-          if (dob >= valid) {
-            alert('Valid Until must be after Date of Birth.');
-            return false;
-          }
-          return true;
-        },
         updateStudentData() {
           students[currentStudentIndex] = {
             name: elements.fields.name.value,
             adm: elements.fields.adm.value,
             klass: elements.fields.klass.value,
-            dob: elements.fields.dob.value,
+            gender: elements.fields.gender.value,
             validForYears: parseInt(elements.fields.validForYears.value),
-            showDob: elements.fields.showDob.checked,
+            showGender: elements.fields.showGender.checked,
             photo: students[currentStudentIndex]?.photo || CONFIG.defaultPhoto,
             phone: elements.fields.phone.value,
             email: elements.fields.email.value,
@@ -635,16 +643,15 @@
             this.validateField(elements.fields.name, elements.errors.name),
             this.validateField(elements.fields.adm, elements.errors.adm, elements.fields.adm.pattern),
             this.validateField(elements.fields.klass, elements.errors.klass),
-            this.validateField(elements.fields.dob, elements.errors.dob),
-            this.validateDates()
+            this.validateField(elements.fields.gender, elements.errors.gender)
           ].every(Boolean);
 
           // Preview only the current student
           elements.idStage.innerHTML = '';
           const student = students[currentStudentIndex];
-          let dobHtml = '';
-          if (student.showDob) {
-            dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
+          let genderHtml = '';
+          if (student.showGender) {
+            genderHtml = `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(student.gender)}</span></p>`;
           }
           elements.idStage.insertAdjacentHTML('beforeend', `
             <div class="id-card-wrapper" aria-label="ID card preview">
@@ -663,7 +670,7 @@
                       <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      ${dobHtml}
+                      ${genderHtml}
                     </div>
                   </div>
                   <footer class="footer">
@@ -677,7 +684,7 @@
                   </header>
                   <div class="body-back">
                     <div class="meta">
-                      <div class="title">Valid Until: ${utils.fmtDate(student.valid)}</div>
+                      <div class="title">Valid Until: ${student.valid}</div>
                       <div>Address: ${utils.sanitize(student.address) || '—'}</div>
                       <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
@@ -708,9 +715,9 @@
             document.body.appendChild(tempContainer);
             for (let i = 0; i < students.length; i++) {
               const student = students[i];
-              let dobHtml = '';
-              if (student.showDob) {
-                dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
+              let genderHtml = '';
+              if (student.showGender) {
+                genderHtml = `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(student.gender)}</span></p>`;
               }
               // Capture front
               tempContainer.innerHTML = `
@@ -728,7 +735,7 @@
                       <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      ${dobHtml}
+                      ${genderHtml}
                     </div>
                   </div>
                   <footer class="footer">
@@ -753,7 +760,7 @@
                   </header>
                   <div class="body-back">
                     <div class="meta">
-                      <div class="title">Valid Until: ${utils.fmtDate(student.valid)}</div>
+                      <div class="title">Valid Until: ${student.valid}</div>
                       <div>Address: ${utils.sanitize(student.address) || '—'}</div>
                       <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
@@ -784,9 +791,9 @@
             let backHtml = '<div class="back-grid">';
             pageStudents.forEach((student, index) => {
               const globalIndex = i + index;
-              let dobHtml = '';
-              if (student.showDob) {
-                dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
+              let genderHtml = '';
+              if (student.showGender) {
+                genderHtml = `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(student.gender)}</span></p>`;
               }
               if (useImages) {
                 const {front, back} = dataUrls[globalIndex];
@@ -818,7 +825,7 @@
                             <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                             <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                             <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                            ${dobHtml}
+                            ${genderHtml}
                           </div>
                         </div>
                         <footer class="footer">
@@ -838,7 +845,7 @@
                         </header>
                         <div class="body-back">
                           <div class="meta">
-                            <div class="title">Valid Until: ${utils.fmtDate(student.valid)}</div>
+                            <div class="title">Valid Until: ${student.valid}</div>
                             <div>Address: ${utils.sanitize(student.address) || '—'}</div>
                             <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
                             <div>Email: ${utils.sanitize(student.email) || '—'}</div>
@@ -1002,6 +1009,18 @@
             form.updatePreview();
           });
 
+          elements.tools.duplexMode.addEventListener('change', (e) => {
+            document.documentElement.style.setProperty('--duplex-rotate', e.target.value === 'long' ? '180deg' : '0deg');
+          });
+
+          elements.tools.offsetX.addEventListener('change', (e) => {
+            document.documentElement.style.setProperty('--back-offset-x', `${e.target.value}mm`);
+          });
+
+          elements.tools.offsetY.addEventListener('change', (e) => {
+            document.documentElement.style.setProperty('--back-offset-y', `${e.target.value}mm`);
+          });
+
           elements.tools.resetBtn.addEventListener('click', () => {
             localStorage.removeItem('glc_id_state');
             window.location.reload();
@@ -1009,8 +1028,8 @@
 
           elements.tools.addStudentBtn.addEventListener('click', () => {
             students.push({
-              name: '', adm: '', klass: '', dob: '', validForYears: 1, valid: computeValidDate(1),
-              showDob: true,
+              name: '', adm: '', klass: '', gender: 'Male', validForYears: 1, valid: computeValidDate(1),
+              showGender: true,
               photo: CONFIG.defaultPhoto, phone: '', email: '', address: ''
             });
             currentStudentIndex = students.length - 1;
