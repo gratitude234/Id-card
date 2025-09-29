@@ -141,10 +141,11 @@
     .kv { font-size: 11px; margin: 3px 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
 
+    /* ==== Back layout fixes: lock QR + signature on the same baseline ====*/
     .body-back{
       grid-row: 2;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr auto; /* left fills, right fits signature */
       grid-template-rows: auto 1fr var(--bottom-row-h);
       gap: 2mm 4mm;
       padding: 6mm 6mm 5mm;
@@ -155,13 +156,13 @@
       text-align: center;
       font-size: 3.2mm;
       line-height: 1.3;
-      margin: 0;                                  /* keep compact */
+      margin: 0;
     }
     .meta .title{ font-weight: 800; margin-bottom: 1mm; }
 
     .qr{
       grid-column: 1; grid-row: 3;
-      justify-self: start;
+      justify-self: start; align-self: end;
       width: var(--qr-size); height: var(--qr-size);
       border: .3mm solid #ddd; border-radius: 1.5mm;
       display:flex; align-items:center; justify-content:center;
@@ -171,37 +172,28 @@
 
     .sign{
       grid-column: 2; grid-row: 3;
-      place-self: end end;
-      text-align: right;
+      align-self: end; text-align: right;
       display:flex; flex-direction:column;
-      align-items:flex-end; justify-content:flex-end;
-      gap: 2mm;
+      align-items:flex-end; justify-content:flex-end; /* keep items on the bottom baseline */
+      gap: 1mm;
       font-size: 3mm; line-height: 1.2;
       max-width: 40mm;
-      max-height: var(--bottom-row-h);
-      overflow: hidden;
+      /* allow inner content to show even if tight */
+      overflow: visible;
     }
-    .sign p{ margin: 0 0 1mm 0; }
+    .sign p{ margin: 0; font-size: 2.6mm; opacity:.9; }
 
     .sign .sig{
-      font-family:"Great Vibes",cursive;
-      font-weight:400;
+      font-family:"Great Vibes",cursive; font-weight:400;
       /* reserves ~8mm for caption + gaps + line */
-      font-size:clamp(5mm, calc(var(--bottom-row-h) - 8mm), 9mm);
-      line-height:1;
-      white-space:nowrap;
+      font-size:clamp(5mm, calc(var(--bottom-row-h) - 9mm), 9mm);
+      line-height:1; white-space:nowrap;
       transform:translateY(0.5mm);
-      max-width:34mm;
-      max-height:calc(var(--bottom-row-h) - 8mm);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      border:0; background:transparent;
+      max-width:34mm; display:block;
+      color:#111;
     }
 
-    .sign .line{
-      width: 34mm;
-      border-top: .3mm solid #cbd5e1;
-    }
+    .sign .line{ width: 34mm; border-top: .3mm solid #cbd5e1; }
 
     .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
 
@@ -447,7 +439,7 @@
     (function () {
       const CONFIG = {
         defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
-        defaultLogo: '/glc-logo.jpg',
+        defaultLogo: 'https://via.placeholder.com/28x28?text=GLC', // Placeholder logo; replace with actual if available
         qrSize: 66,
         captureScale: 2,
         debounceDelay: 300,
@@ -495,13 +487,33 @@
         loading: document.querySelector('.loading')
       };
 
+      // ====== Date helpers: treat YYYY-MM-DD as date-only (no timezone) ======
+      const dateUtil = {
+        pad: n => String(n).padStart(2, '0'),
+        isYmd: (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || ''),
+        toDisplay(ymd) {
+          if (!this.isYmd(ymd)) return '—';
+          const [y,m,d] = ymd.split('-');
+          return `${this.pad(d)}/${this.pad(m)}/${y}`;
+        },
+        todayYmd() {
+          const t = new Date();
+          return `${t.getFullYear()}-${this.pad(t.getMonth()+1)}-${this.pad(t.getDate())}`;
+        },
+        addYearsFromToday(years) {
+          const t = new Date();
+          t.setFullYear(t.getFullYear() + Number(years || 0));
+          return `${t.getFullYear()}-${this.pad(t.getMonth()+1)}-${this.pad(t.getDate())}`;
+        }
+      };
+
       let students = [{
         name: 'ADEKUNLE SAMUEL',
         adm: 'GLC/2025/001',
         klass: 'SS1 A',
         dob: '2009-09-15',
         validForYears: 1,
-        valid: '2026-09-28',
+        valid: dateUtil.addYearsFromToday(1), // ensure no off-by-one
         director: 'OLANIBI GREAT-GOD',
         showDob: true,
         photo: CONFIG.defaultPhoto,
@@ -516,21 +528,20 @@
 
       // Utilities
       const utils = {
-        pad: n => n.toString().padStart(2, '0'),
-        fmtDate(iso) {
-          if (!iso) return '—';
-          const d = new Date(iso);
-          return Number.isNaN(d.getTime()) ? '—' : `${this.pad(d.getDate())}/${this.pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+        pad: (n) => String(n).padStart(2,'0'),
+        fmtDate(ymd) {
+          // Display a YYYY-MM-DD string as DD/MM/YYYY without timezone shifts.
+          return dateUtil.toDisplay(ymd);
         },
         sanitize(str) {
-          return str.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
+          return (str || '').replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
         },
         showErr(el, show, msg) {
           el.style.display = show ? 'block' : 'none';
           if (msg) el.textContent = msg;
         },
         isSafeUrl(url) {
-          return url.startsWith('https://') && url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+          return url && url.startsWith('https://') && url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
         },
         preloadImage(url) {
           return new Promise((resolve, reject) => {
@@ -544,10 +555,8 @@
       };
 
       function computeValidDate(years) {
-        const today = new Date();
-        const valid = new Date(today);
-        valid.setFullYear(today.getFullYear() + years);
-        return valid.toISOString().split('T')[0];
+        // Return YYYY-MM-DD using local calendar (no toISOString to avoid UTC shift)
+        return dateUtil.addYearsFromToday(years);
       }
 
       // State Management
@@ -556,7 +565,7 @@
           try {
             const data = { students, currentStudentIndex };
             const serialized = JSON.stringify(data);
-            if (serialized.length > 4 * 1024 * 1024) { // Warn at ~4MB
+            if (serialized.length > 4 * 1024 * 1024) {
               alert('Warning: Data is large and may exceed storage limits. Consider exporting or removing some students.');
             }
             localStorage.setItem('glc_id_state', serialized);
@@ -570,7 +579,8 @@
             const raw = localStorage.getItem('glc_id_state');
             if (!raw) return;
             const s = JSON.parse(raw);
-            students = s.students.map(stu => { delete stu.signatureImg; return stu; }) || students;
+            students = (s.students || []).map(stu => { delete stu.signatureImg; return stu; }) || students;
+            if (!students.length) students = [{...students[0]}];
             currentStudentIndex = Math.min(s.currentStudentIndex || 0, students.length - 1);
             cardCaches.length = 0;
             students.forEach(() => cardCaches.push({ frontCache: null, backCache: null }));
@@ -642,7 +652,7 @@
               return dataUrl;
             }
             const url = elements.fields.photoUrl.value.trim();
-            if (url && utils.isSafeUrl(url)) {
+            if (utils.isSafeUrl(url)) {
               await utils.preloadImage(url);
               students[currentStudentIndex].photo = url;
               return url;
@@ -672,9 +682,7 @@
         render(index) {
           const student = students[index] || {};
           let text = `Name: ${student.name || '-'}\nID: ${student.adm || '-'}\nValid Until: ${utils.fmtDate(student.valid)}\nWeb: www.greatlandmarkcollege.org`;
-          if (student.showDob) {
-            text += `\nDate of Birth: ${utils.fmtDate(student.dob)}`;
-          }
+          if (student.showDob) { text += `\nDate of Birth: ${utils.fmtDate(student.dob)}`; }
           const qrWraps = [
             document.querySelector(`#qr-${index}`),
             document.querySelector(`#print-qr-${index}`)
@@ -706,8 +714,11 @@
           return isValid;
         },
         validateDates() {
-          const dob = new Date(elements.fields.dob.value);
-          const valid = new Date(students[currentStudentIndex].valid);
+          const dobStr = elements.fields.dob.value;
+          const validStr = students[currentStudentIndex].valid;
+          // compare using pure strings -> Date objects (safe):
+          const dob = new Date(dobStr + 'T00:00:00');
+          const valid = new Date(validStr + 'T00:00:00');
           if (dob >= valid) {
             alert('Valid Until must be after Date of Birth.');
             return false;
@@ -744,10 +755,7 @@
           // Preview only the current student
           elements.idStage.innerHTML = '';
           const student = students[currentStudentIndex];
-          let dobHtml = '';
-          if (student.showDob) {
-            dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
-          }
+          const dobHtml = student.showDob ? `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>` : '';
           elements.idStage.insertAdjacentHTML('beforeend', `
             <div class="id-card-wrapper" aria-label="ID card preview">
               <div class="id-card-container" id="card-${currentStudentIndex}">
@@ -785,11 +793,11 @@
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                       <div>Website: www.greatlandmarkcollege.org</div>
                     </div>
-                    <div class="qr" id="qr-${currentStudentIndex}"></div>
+                    <div class="qr" id="qr-${currentStudentIndex}" role="img" aria-label="QR code linking to student details"></div>
                     <div class="sign">
-                      <p>Director’s Signature:</p>
-                      <div class="sig" style="font-family:'Great Vibes', cursive; font-size: 9mm; line-height: 1; transform: translateY(0.5mm); white-space: nowrap; max-width: 34mm; overflow: hidden; text-overflow: ellipsis;">~ ${utils.sanitize(student.director || '')}</div>
+                      <div class="sig">~ ${utils.sanitize(student.director || '')}</div>
                       <div class="line"></div>
+                      <p>Director’s Signature</p>
                     </div>
                   </div>
                   <footer class="footer">
@@ -817,10 +825,7 @@
             document.body.appendChild(tempContainer);
             for (let i = 0; i < students.length; i++) {
               const student = students[i];
-              let dobHtml = '';
-              if (student.showDob) {
-                dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
-              }
+              const dobHtml2 = student.showDob ? `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>` : '';
               // Capture front
               tempContainer.innerHTML = `
                 <section class="face front">
@@ -837,7 +842,7 @@
                       <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      ${dobHtml}
+                      ${dobHtml2}
                     </div>
                   </div>
                   <footer class="footer">
@@ -870,9 +875,9 @@
                     </div>
                     <div class="qr"></div>
                     <div class="sign">
-                      <p>Director’s Signature:</p>
-                      <div class="sig" style="font-family:'Great Vibes', cursive; font-size: 9mm; line-height: 1; transform: translateY(0.5mm); white-space: nowrap; max-width: 34mm; overflow: hidden; text-overflow: ellipsis;">~ ${utils.sanitize(student.director || '')}</div>
+                      <div class="sig">~ ${utils.sanitize(student.director || '')}</div>
                       <div class="line"></div>
+                      <p>Director’s Signature</p>
                     </div>
                   </div>
                   <footer class="footer">
@@ -909,10 +914,7 @@
             let backHtml = '<div class="back-grid">';
             pageStudents.forEach((student, index) => {
               const globalIndex = i + index;
-              let dobHtml = '';
-              if (student.showDob) {
-                dobHtml = `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>`;
-              }
+              const dobHtml3 = student.showDob ? `<p class="kv"><strong>Date of Birth:</strong> <span>${utils.fmtDate(student.dob)}</span></p>` : '';
               if (useImages) {
                 const {front, back} = dataUrls[globalIndex];
                 frontHtml += `
@@ -943,7 +945,7 @@
                             <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
                             <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                             <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                            ${dobHtml}
+                            ${dobHtml3}
                           </div>
                         </div>
                         <footer class="footer">
@@ -971,9 +973,9 @@
                           </div>
                           <div class="qr" id="print-qr-${globalIndex}"></div>
                           <div class="sign">
-                            <p>Director’s Signature:</p>
-                            <div class="sig" style="font-family:'Great Vibes', cursive; font-size: 9mm; line-height: 1; transform: translateY(0.5mm); white-space: nowrap; max-width: 34mm; overflow: hidden; text-overflow: ellipsis;">~ ${utils.sanitize(student.director || '')}</div>
+                            <div class="sig">~ ${utils.sanitize(student.director || '')}</div>
                             <div class="line"></div>
+                            <p>Director’s Signature</p>
                           </div>
                         </div>
                         <footer class="footer">
@@ -995,7 +997,9 @@
             }
           }
 
-          cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || { frontCache: null, backCache: null };
+          const container = document.querySelector(`#card-${currentStudentIndex}`);
+          if (container) container.classList.remove('flipped');
+
           card.clearCache(currentStudentIndex);
           state.save();
           state.updateStudentSelect();
@@ -1155,6 +1159,7 @@
           elements.tools.removeStudentBtn.addEventListener('click', () => {
             if (students.length <= 1) return;
             students.splice(currentStudentIndex, 1);
+            cardCaches.splice(currentStudentIndex, 1);
             currentStudentIndex = Math.min(currentStudentIndex, students.length - 1);
             state.updateForm();
             form.updatePreview();
