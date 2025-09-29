@@ -142,68 +142,23 @@
     .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
 
     .body-back{
-      grid-row: 2;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto 1fr var(--bottom-row-h);
-      gap: 2mm 4mm;
-      padding: 6mm 6mm 5mm;
-      overflow: hidden;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      grid-template-rows:auto var(--bottom-row-h);
+      gap:3mm 6mm;
+      padding:6mm 6mm 5mm;
+      align-items:end;
+      overflow:hidden;
     }
-    .meta{
-      grid-column: 1 / -1;
-      text-align: center;
-      font-size: 3.2mm;
-      line-height: 1.3;
-      margin: 0;                                  /* keep compact */
-    }
-    .meta .title{ font-weight: 800; margin-bottom: 1mm; }
-
-    .qr{
-      grid-column: 1; grid-row: 3;
-      justify-self: start;
-      width: var(--qr-size); height: var(--qr-size);
-      border: .3mm solid #ddd; border-radius: 1.5mm;
-      display:flex; align-items:center; justify-content:center;
-      overflow: hidden;
-    }
+    .meta{ grid-column:1 / -1; text-align:center; font-size:3.2mm; line-height:1.35; margin:0; }
+    .bottom{ grid-column:1 / -1; display:grid; grid-template-columns:1fr 1fr; align-items:end; }
+    .qr{ justify-self:start; width:var(--qr-size); height:var(--qr-size); border:.3mm solid #ddd; border-radius:1.5mm; display:flex; align-items:center; justify-content:center; overflow:hidden; }
     .qr canvas{ width:100% !important; height:100% !important; }
 
-    .sign{
-      grid-column: 2; grid-row: 3;
-      place-self: end end;
-      text-align: right;
-      display:flex; flex-direction:column;
-      align-items:flex-end; justify-content:flex-end;
-      gap: 2mm;
-      font-size: 3mm; line-height: 1.2;
-      max-width: 40mm;
-      max-height: var(--bottom-row-h);
-      overflow: hidden;
-    }
-    .sign p{ margin: 0 0 1mm 0; }
-
-    .sign .sig{
-      font-family:"Great Vibes",cursive;
-      font-weight:400;
-      /* reserves ~8mm for caption + gaps + line */
-      font-size:clamp(5mm, calc(var(--bottom-row-h) - 8mm), 9mm);
-      line-height:1;
-      white-space:nowrap;
-      transform:translateY(0.5mm);
-      max-width:34mm;
-      max-height:calc(var(--bottom-row-h) - 8mm);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      border:0; background:transparent;
-    }
-
-    .sig-img{ max-height:calc(var(--bottom-row-h) - 8mm); width:auto; object-fit:contain; }
-
-    .sign .line{
-      width: 34mm;
-      border-top: .3mm solid #cbd5e1;
-    }
+    .sign{ justify-self:end; text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:2mm; max-width:45mm; }
+    .sign p{ margin:0 0 1mm 0; font-size:3mm; line-height:1.2; }
+    .sign .sig{ font-family:"Great Vibes",cursive; font-weight:400; font-size:9mm; line-height:1; white-space:nowrap; transform:translateY(.2mm); max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+    .sign .line{ width:100%; border-top:.3mm solid #cbd5e1; }
 
     .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
 
@@ -365,17 +320,6 @@
 
           <div class="col-12">
             <div class="form-group">
-              <label for="signatureUrl">Signature Image URL (optional)</label>
-              <input id="signatureUrl" type="url" placeholder="https://example.com/signature.png" />
-              <div class="row">
-                <input id="signatureFile" type="file" accept="image/*" />
-                <span class="help-text">If provided, image overrides the text signature.</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="form-group">
               <label for="showDob">
                 <input type="checkbox" id="showDob" checked> Show Date of Birth on card
               </label>
@@ -478,8 +422,6 @@
           validForYears: document.getElementById('validForYears'),
           director: document.getElementById('director'),
           showDob: document.getElementById('showDob'),
-          signatureUrl: document.getElementById('signatureUrl'),
-          signatureFile: document.getElementById('signatureFile'),
           photoUrl: document.getElementById('photoUrl'),
           photoFile: document.getElementById('photoFile'),
           phone: document.getElementById('phone'),
@@ -519,7 +461,6 @@
         valid: '2026-09-28',
         director: 'OLANIBI GREAT-GOD',
         showDob: true,
-        signatureImg: null,
         photo: CONFIG.defaultPhoto,
         phone: '+234 801 123 4567',
         email: 'info@greatlandmarkcollege.org',
@@ -586,7 +527,7 @@
             const raw = localStorage.getItem('glc_id_state');
             if (!raw) return;
             const s = JSON.parse(raw);
-            students = s.students || students;
+            students = s.students.map(stu => { delete stu.signatureImg; return stu; }) || students;
             currentStudentIndex = Math.min(s.currentStudentIndex || 0, students.length - 1);
             cardCaches.length = 0;
             students.forEach(() => cardCaches.push({ frontCache: null, backCache: null }));
@@ -601,14 +542,11 @@
           Object.entries(elements.fields).forEach(([k, el]) => {
             if (k === 'showDob') {
               el.checked = student.showDob !== false; // default true
-            } else if (k === 'signatureUrl') {
-              el.value = student.signatureImg && student.signatureImg.startsWith('https://') ? student.signatureImg : '';
-            } else if (k !== 'studentSelect' && k !== 'photoFile' && k !== 'signatureFile') {
+            } else if (k !== 'studentSelect' && k !== 'photoFile') {
               el.value = student[k] || '';
             }
           });
           elements.fields.photoFile.value = '';
-          elements.fields.signatureFile.value = '';
         },
         updateStudentSelect() {
           elements.fields.studentSelect.innerHTML = students.map((s, i) => 
@@ -686,36 +624,6 @@
         }
       };
 
-      // Signature Handling
-      const signature = {
-        async setSignature() {
-          elements.loading.classList.add('active');
-          try {
-            const file = elements.fields.signatureFile.files?.[0];
-            if (file) {
-              const dataUrl = await photo.resizeImage(file, 500);
-              students[currentStudentIndex].signatureImg = dataUrl;
-              elements.fields.signatureUrl.value = '';
-              return dataUrl;
-            }
-            const url = elements.fields.signatureUrl.value.trim();
-            if (url && utils.isSafeUrl(url)) {
-              await utils.preloadImage(url);
-              students[currentStudentIndex].signatureImg = url;
-              return url;
-            }
-            students[currentStudentIndex].signatureImg = null;
-            return null;
-          } catch (err) {
-            console.error('Signature processing error:', err);
-            students[currentStudentIndex].signatureImg = null;
-            return null;
-          } finally {
-            elements.loading.classList.remove('active');
-          }
-        }
-      };
-
       // QR Code
       const qr = {
         render(index) {
@@ -772,7 +680,6 @@
             validForYears: parseInt(elements.fields.validForYears.value),
             director: elements.fields.director.value,
             showDob: elements.fields.showDob.checked,
-            signatureImg: students[currentStudentIndex]?.signatureImg || null,
             photo: students[currentStudentIndex]?.photo || CONFIG.defaultPhoto,
             phone: elements.fields.phone.value,
             email: elements.fields.email.value,
@@ -835,14 +742,13 @@
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                       <div>Website: www.greatlandmarkcollege.org</div>
                     </div>
-                    <div class="qr" id="qr-${currentStudentIndex}"></div>
-                    <div class="sign">
-                      <p>Director’s Signature:</p>
-                      ${student.signatureImg
-                        ? `<img class="sig-img" src="${student.signatureImg}" alt="Director’s signature" crossorigin="anonymous">`
-                        : `<div class="sig">${utils.sanitize(student.director || '')}</div>`
-                      }
-                      <div class="line"></div>
+                    <div class="bottom">
+                      <div class="qr" id="qr-${currentStudentIndex}"></div>
+                      <div class="sign">
+                        <p>Director’s Signature:</p>
+                        <div class="sig">${utils.sanitize(student.director || '')}</div>
+                        <div class="line"></div>
+                      </div>
                     </div>
                   </div>
                   <footer class="footer">
@@ -921,14 +827,13 @@
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                       <div>Website: www.greatlandmarkcollege.org</div>
                     </div>
-                    <div class="qr"></div>
-                    <div class="sign">
-                      <p>Director’s Signature:</p>
-                      ${student.signatureImg
-                        ? `<img class="sig-img" src="${student.signatureImg}" alt="Director’s signature" crossorigin="anonymous">`
-                        : `<div class="sig">${utils.sanitize(student.director || '')}</div>`
-                      }
-                      <div class="line"></div>
+                    <div class="bottom">
+                      <div class="qr"></div>
+                      <div class="sign">
+                        <p>Director’s Signature:</p>
+                        <div class="sig">${utils.sanitize(student.director || '')}</div>
+                        <div class="line"></div>
+                      </div>
                     </div>
                   </div>
                   <footer class="footer">
@@ -1025,14 +930,13 @@
                             <div>Email: ${utils.sanitize(student.email) || '—'}</div>
                             <div>Website: www.greatlandmarkcollege.org</div>
                           </div>
-                          <div class="qr" id="print-qr-${globalIndex}"></div>
-                          <div class="sign">
-                            <p>Director’s Signature:</p>
-                            ${student.signatureImg
-                              ? `<img class="sig-img" src="${student.signatureImg}" alt="Director’s signature" crossorigin="anonymous">`
-                              : `<div class="sig">${utils.sanitize(student.director || '')}</div>`
-                            }
-                            <div class="line"></div>
+                          <div class="bottom">
+                            <div class="qr" id="print-qr-${globalIndex}"></div>
+                            <div class="sign">
+                              <p>Director’s Signature:</p>
+                              <div class="sig">${utils.sanitize(student.director || '')}</div>
+                              <div class="line"></div>
+                            </div>
                           </div>
                         </div>
                         <footer class="footer">
@@ -1139,20 +1043,11 @@
               elements.fields.photoFile.value = '';
               photo.setPhoto().then(() => form.updatePreview());
             }
-            if (e.target === elements.fields.signatureUrl) {
-              elements.fields.signatureFile.value = '';
-              signature.setSignature().then(() => form.updatePreview());
-            }
             debounceTimer = setTimeout(() => form.updatePreview(), CONFIG.debounceDelay);
           });
 
           elements.fields.photoFile.addEventListener('change', async () => {
             await photo.setPhoto();
-            form.updatePreview();
-          });
-
-          elements.fields.signatureFile.addEventListener('change', async () => {
-            await signature.setSignature();
             form.updatePreview();
           });
 
@@ -1213,7 +1108,6 @@
             students.push({
               name: '', adm: '', klass: '', dob: '', validForYears: 1, valid: computeValidDate(1), director: '',
               showDob: true,
-              signatureImg: null,
               photo: CONFIG.defaultPhoto, phone: '', email: '', address: ''
             });
             currentStudentIndex = students.length - 1;
