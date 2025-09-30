@@ -377,12 +377,6 @@
           <option value="short">Short-edge (no rotate)</option>
         </select>
       </label>
-      <label style="display: flex; align-items: center; font-size: 14px; color: #444;">
-        Back X offset: <input type="number" id="offsetX" value="0" step="0.1" style="width: 60px; margin-left: 5px;"> mm
-      </label>
-      <label style="display: flex; align-items: center; font-size: 14px; color: #444;">
-        Back Y offset: <input type="number" id="offsetY" value="0" step="0.1" style="width: 60px; margin-left: 5px;"> mm
-      </label>
     </div>
 
     <div class="id-stage" id="idStage">
@@ -429,8 +423,8 @@
           klass: document.getElementById('errClass'),
           gender: document.getElementById('errGender'),
           studentSelect: document.getElementById('errStudentSelect'),
-  photo: document.getElementById('errPhoto')
- },
+          photo: document.getElementById('errPhoto')
+        },
         tools: {
           flipBtn: document.getElementById('flipBtn'),
           printFrontsBtn: document.getElementById('printFrontsBtn'),
@@ -472,16 +466,16 @@
           return str.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
         },
         showErr(el, show, msg) {
-  if (!el) return; // prevent crashes if a ref is missing
-  el.style.display = show ? 'block' : 'none';
-  if (msg) el.textContent = msg;
- },
+          if (!el) return; // prevent crashes if a ref is missing
+          el.style.display = show ? 'block' : 'none';
+          if (msg) el.textContent = msg;
+        },
         isSafeUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' || u.protocol === 'http:';
-  } catch { return false; }
- },
+          try {
+            const u = new URL(url);
+            return u.protocol === 'https:' || u.protocol === 'http:';
+          } catch { return false; }
+        },
         preloadImage(url) {
           return new Promise((resolve, reject) => {
             const img = new Image();
@@ -1016,14 +1010,6 @@
 
           elements.tools.duplexMode.addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--duplex-rotate', e.target.value === 'long' ? '180deg' : '0deg');
-          });
-
-          elements.tools.offsetX.addEventListener('change', (e) => {
-            document.documentElement.style.setProperty('--back-offset-x', `${e.target.value}mm`);
-          });
-
-          elements.tools.offsetY.addEventListener('change', (e) => {
-            document.documentElement.style.setProperty('--back-offset-y', `${e.target.value}mm`);
           });
 
           elements.tools.resetBtn.addEventListener('click', () => {
