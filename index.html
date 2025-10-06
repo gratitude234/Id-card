@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ID Card Generator — Great Landmark College</title>
 
-  <!-- html2canvas (CDNs) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,175 +13,122 @@
   <style>
     :root{
       --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c; --bg:#f4f7f6; --ink:#333;
-      --border-radius:10px; --padding-sm:16px; --shadow:0 4px 12px rgba(0,0,0,.1);
-      --focus:#5b9dd9;
-      /* page + duplex controls */
-      --page-w:210mm; --page-h:297mm;
-      --duplex-rotate:180deg;       /* long-edge default */
-      --back-offset-x:0mm; --back-offset-y:0mm;
-      --back-scale-x:1;             /* set to -1 to mirror backs (rare) */
+      --radius:12px; --pad:16px; --shadow:0 4px 12px rgba(0,0,0,.10);
+      /* paper */
+      --page-w:210mm; --page-h:297mm; --duplex-rotate:180deg;
+      /* true card size */
+      --card-w:85.6mm; --card-h:54mm;
     }
-    *{ box-sizing:border-box }
-    html,body{ height:100%; margin:0 }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
     body{
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;
-      background:var(--bg); padding:16px; display:flex; flex-direction:column; align-items:center; color:var(--ink);
+      background:var(--bg); color:var(--ink);
+      padding:16px; display:flex; flex-direction:column; align-items:center;
     }
-    .container{ background:#fff; padding:20px; border-radius:var(--border-radius); box-shadow:var(--shadow); max-width:960px; width:100%; margin-bottom:20px }
-    h1{ text-align:center; color:var(--blue); margin:0 0 16px; font-size:26px; font-weight:700 }
-    h2{ color:var(--blue); border-bottom:2px solid #eee; padding-bottom:8px; margin:16px 0; font-size:20px }
+    .container{background:#fff;border-radius:10px;box-shadow:var(--shadow);max-width:980px;width:100%;padding:20px}
+    h1{margin:0 0 12px;text-align:center;color:var(--blue);font-size:26px}
+    h2{margin:18px 0 8px;color:var(--blue);border-bottom:2px solid #eee;padding-bottom:6px;font-size:20px}
 
-    /* Form */
-    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:12px }
-    .col-6{ grid-column:span 6 } .col-12{ grid-column:span 12 }
-    .form-group{ position:relative; display:flex; flex-direction:column; gap:6px }
-    .form-group label{ font-weight:600; color:#444; font-size:14px }
-    .form-group input[type="text"],
-    .form-group input[type="date"],
-    .form-group input[type="url"],
-    .form-group input[type="email"],
-    .form-group select{
-      padding:var(--padding-sm); border:1px solid #ddd; border-radius:var(--border-radius);
-      font-size:16px; background:#fff; transition:border-color .2s ease;
+    /* form */
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-6{grid-column:span 6} .col-12{grid-column:span 12}
+    .form-group{display:flex;flex-direction:column;gap:6px;position:relative}
+    .form-group label{font-weight:600;color:#444;font-size:14px}
+    .form-group input[type="text"],.form-group input[type="date"],.form-group input[type="url"],.form-group input[type="email"],.form-group select{
+      padding:var(--pad);border:1px solid #ddd;border-radius:10px;font-size:16px;background:#fff
     }
-    .form-group input:focus,.form-group select:focus{ outline:2px solid var(--focus); border-color:var(--focus) }
-    .form-group.valid::after{ content:'✔'; position:absolute; right:12px; top:36px; color:#2ecc71; font-size:16px }
-    .form-group.invalid::after{ content:'✘'; position:absolute; right:12px; top:36px; color:#b00020; font-size:16px }
-    .form-group.valid input,.form-group.valid select{ border-color:#2ecc71 }
-    .form-group.invalid input,.form-group.invalid select{ border-color:#b00020 }
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-    .help-text{ font-size:12px; color:#777 }
-    .error-text{ font-size:12px; color:#b00020; display:none; margin-top:4px }
-    .loading{
-      display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-      background:rgba(0,0,0,.8); color:#fff; padding:12px 24px; border-radius:8px; z-index:1000; font-size:16px;
-    }
-    .loading.active{ display:flex; align-items:center; gap:8px }
-    .loading::before{ content:'⏳' }
+    .form-group input:focus,.form-group select:focus{outline:2px solid #5b9dd9;border-color:#5b9dd9}
+    .error-text{display:none;color:#b00020;font-size:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .help-text{font-size:12px;color:#777}
+    .student-controls{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+    .student-controls select{flex:1}
 
-    .btn{
-      background:var(--blue); color:#fff; padding:14px 20px; border:0; border-radius:var(--border-radius);
-      cursor:pointer; font-size:16px; font-weight:600; transition:transform .1s ease, background .2s ease;
-      min-height:48px; touch-action:manipulation;
-    }
-    .btn:hover{ background:#1e3a8a; transform:scale(1.02) }
-    .btn:active{ transform:scale(.98) }
-    .btn.secondary{ background:#eef2ff; color:#1e2a78; border:1px solid #dfe3ff }
-    .btn:disabled{ opacity:.5; cursor:not-allowed }
+    .btn{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;transition:.15s transform,.2s background}
+    .btn:hover{background:#1e3a8a;transform:scale(1.02)}
+    .btn:active{transform:scale(.98)}
+    .btn.secondary{background:#eef2ff;color:#1e2a78;border:1px solid #dfe3ff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
 
-    /* Student Controls */
-    .student-controls{ display:flex; flex-direction:row; gap:10px; align-items:center; margin-bottom:16px }
-    .student-controls select{ flex:1 }
-
-    /* Card area */
-    .tools{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:12px 0 }
-
-    .id-stage{ display:flex; gap:18px; justify-content:center; flex-wrap:wrap }
-    .id-card-wrapper{ width:350px; aspect-ratio:85.6/54; position:relative; perspective:1000px; margin:12px auto 0; transition:transform .3s ease }
-    .id-card-container{ position:absolute; inset:0; transform-style:preserve-3d; transition:transform .7s cubic-bezier(.68,-.55,.27,1.55), scale .2s ease }
-    .id-card-container:hover{ scale:1.02 }
-    .id-card-container.flipped{ transform:rotateY(180deg) }
-
+    /* preview card */
+    .id-stage{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+    .id-card-wrapper{width:350px;aspect-ratio:85.6/54;position:relative;margin:12px auto 0}
+    .id-card-container{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s}
+    .id-card-container.flipped{transform:rotateY(180deg)}
+    /* IMPORTANT: switch to flex column so footer pins to bottom */
     .face{
-      position:absolute; inset:0; backface-visibility:hidden; border-radius:12px;
-      box-shadow:0 4px 15px rgba(0,0,0,.18); background:#fff;
-      display:grid; grid-template-rows:40px 1fr auto; overflow:hidden; color:#333; outline:2px solid transparent;
+      position:absolute; inset:0; background:#fff; border-radius:var(--radius);
+      box-shadow:0 4px 15px rgba(0,0,0,.18); overflow:hidden;
+      display:flex; flex-direction:column; /* replaces grid */
+      backface-visibility:hidden;
     }
-    .face:focus{ outline:2px solid var(--focus); outline-offset:3px }
-    .back{ transform:rotateY(180deg) }
+    .back{transform:rotateY(180deg)}
 
     .id-card-header{
-      background:var(--blue); color:#fff; padding:8px 14px; display:flex; align-items:center;
-      height:40px; border-bottom:3px solid var(--yellow);
+      flex:0 0 40px; height:40px;
+      background:var(--blue); color:#fff; display:flex; align-items:center; gap:10px;
+      padding:8px 14px; border-bottom:3px solid var(--yellow)
     }
-    .id-card-header img.logo{
-      width:28px; height:28px; aspect-ratio:1/1;
-      border-radius:50%; object-fit:cover; margin-right:10px; background:#fff;
-      image-rendering:auto; transform:translateZ(0);
+    .id-card-header img.logo{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#fff;flex-shrink:0}
+    .id-card-header h3{margin:0;font-weight:800;font-size:15px;letter-spacing:.3px}
+
+    .body-front,.body-back{
+      flex:1 1 auto; min-height:0; /* allow the middle to shrink so footer stays put */
+      padding:12px; display:flex; gap:12px; align-items:flex-start;
     }
-    .id-card-header h3{ font-size:15px; margin:0; font-weight:800; letter-spacing:.3px }
+    .body-back{display:block;padding:6mm}
+    .meta{font-size:3.2mm;line-height:1.3;text-align:center}
 
-    .body-front{ display:flex; padding:12px; gap:12px; flex-grow:1; align-items:flex-start }
-    .photo{ width:74px; height:74px; border-radius:8px; overflow:hidden; border:2px solid var(--yellow); flex-shrink:0 }
-    .photo img{ width:100%; height:100%; object-fit:cover; object-position:50% 40% }
+    .photo{width:74px;height:74px;border:2px solid var(--yellow);border-radius:10px;overflow:hidden;flex-shrink:0}
+    .photo img{width:100%;height:100%;object-fit:cover;object-position:center}
 
-    .details{ flex:1; min-width:0 }
-    .details h4{ font-size:13px; color:var(--blue); margin:0 0 6px; border-bottom:1px solid #eee; padding-bottom:4px; font-weight:800 }
-    .kv{ font-size:11px; margin:3px 0; line-height:1.35; white-space:normal }
-    .kv strong{ color:var(--blue); display:inline-block; min-width:90px }
-    .kv span{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+    .details{flex:1;min-width:0}
+    .details h4{margin:0 0 6px;font-size:13px;color:var(--blue);border-bottom:1px solid #eee;padding-bottom:4px;font-weight:800}
+    .kv{display:flex;gap:8px;margin:3px 0;font-size:11px;line-height:1.35}
+    .kv strong{color:var(--blue);min-width:92px}
+    .kv span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .kv.name span{font-weight:700}
+    .kv.name.long span{font-size:10px}
 
-    .body-back{ grid-row:2; padding:6mm 6mm 5mm; overflow:hidden; text-align:center }
-    .meta{ text-align:center; font-size:3.2mm; line-height:1.3; margin:0 }
-    .meta .title{ font-weight:800; margin-bottom:1mm }
-
-    .footer{ background:var(--red); color:#fff; font-size:9px; padding:6px 10px; text-align:center; font-weight:700 }
-
-    /* Print sheet layout (default 4-up) */
-    .print-page{ display:none; width:var(--page-w); height:var(--page-h); position:relative }
-    .front-grid,.back-grid{
-      position:absolute; top:0; left:0; width:var(--page-w); height:var(--page-h);
-      display:grid; grid-template-columns:repeat(2,85.6mm); grid-template-rows:repeat(2,54mm);
-      gap:10mm; justify-content:center; align-content:start;
+    .footer{
+      flex:0 0 auto; margin-top:auto; /* pins footer to the bottom */
+      background:var(--red); color:#fff; text-align:center; font-weight:700; font-size:9px; padding:6px 10px
     }
-    .back-grid{ transform:scaleX(var(--back-scale-x)) translate(var(--back-offset-x), var(--back-offset-y)) rotate(var(--duplex-rotate)); }
-    .print-id{ width:85.6mm; height:54mm }
-    .print-id .face{ width:85.6mm; height:54mm; box-shadow:none; border-radius:2mm; border:none }
 
-    /* 8-up compact layout (70 x 44 mm) */
-    body.eight-up .front-grid, body.eight-up .back-grid{
-      grid-template-columns:repeat(4,70mm);
-      grid-template-rows:repeat(2,44mm);
-      gap:6mm;
-    }
-    body.eight-up .print-id, body.eight-up .print-id .face{ width:70mm; height:44mm }
+    /* printing layout */
+    .print-page{display:none;width:var(--page-w);height:var(--page-h);position:relative}
+    .grid-surface{position:absolute;inset:0;display:grid;justify-content:center;align-content:start}
+    .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
+    .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
+    .back-surface{transform:rotate(var(--duplex-rotate))}
 
-    /* Screen helper border only (not printing) */
-    .face{ border:1px dashed #ccc }
+    .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
+    .loading.active{display:flex;gap:8px}
+    .loading::before{content:"⏳"}
+
     @media print{
-      @page{ size:auto; margin:0 }
-      html,body,*{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important }
-      body{ background:#fff; padding:0; margin:0 }
-      .container{ box-shadow:none; padding:0 }
-      .id-stage,.tools,.form-section,.notes,.loading{ display:none !important }
-      h1,h2{ display:none !important }
-
-      .print-page{ display:block; page-break-after:always }
-      .front-grid{ display:grid } .back-grid{ display:none }
-      .print-page.print-back .front-grid{ display:none }
-      .print-page.print-back .back-grid{ display:grid }
-
-      .id-card-header{ background-color:var(--blue) !important; color:#fff !important; border-bottom-color:var(--yellow) !important }
-      .footer{ background-color:var(--red) !important; color:#fff !important }
-      .face{ border:none !important }  /* hide dashed outline on paper */
+      @page{size:auto;margin:0}
+      html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
+      body{background:#fff;padding:0;margin:0}
+      .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
+      .print-page{display:block;page-break-after:always}
+      .id-card-header{background-color:var(--blue) !important;color:#fff !important;border-bottom-color:var(--yellow) !important}
+      .footer{background-color:var(--red) !important;color:#fff !important}
     }
 
     @media (max-width:768px){
-      body{ padding:12px }
-      .container{ padding:16px; box-shadow:var(--shadow) }
-      h1{ font-size:24px } h2{ font-size:18px }
-      .grid{ grid-template-columns:1fr; gap:10px }
-      .col-6,.col-12{ grid-column:span 1 }
-      .student-controls{ flex-direction:column; gap:8px }
-      .tools{ flex-direction:column }
-      .btn{ width:100%; min-height:50px; font-size:16px }
-      .id-card-wrapper{ width:90%; max-width:320px; margin:10px auto }
-      .id-stage{ justify-content:center }
-      .notes,.error-text,.help-text{ font-size:13px }
-      .id-card-header h3{ font-size:14px }
-      .kv{ font-size:10px }
-      .footer{ font-size:8px }
-      .meta{ font-size:10px }
+      body{padding:12px}
+      .container{padding:16px}
+      .grid{grid-template-columns:1fr}
+      .col-6,.col-12{grid-column:span 1}
+      .btn{width:100%}
+      .id-card-wrapper{max-width:320px}
+      .id-card-header h3{font-size:14px}
+      .kv{font-size:10px}
+      .footer{font-size:8px}
     }
-    @media (max-width:480px){
-      .id-card-wrapper{ width:100% }
-      .kv strong{ min-width:80px }
-      .photo{ width:60px; height:60px }
-    }
-    .notes{ font-size:12px; color:#666; text-align:center; margin-top:8px }
-    input[type="number"].mm{ width:70px; padding:10px; border-radius:10px; border:1px solid #dfe3ff; background:#eef2ff; color:#1e2a78; font-weight:600 }
-    .mini-label{ font-size:12px; color:#1e2a78; margin-right:6px }
-    .inline{ display:inline-flex; align-items:center; gap:.5rem }
   </style>
 </head>
 <body>
@@ -195,10 +141,7 @@
       <div class="student-controls">
         <div class="form-group">
           <label for="studentSelect">Select Student</label>
-          <select id="studentSelect" aria-describedby="errStudentSelect">
-            <option value="0">Student 1</option>
-          </select>
-          <div class="error-text" id="errStudentSelect" aria-live="assertive"></div>
+          <select id="studentSelect"></select>
         </div>
         <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
         <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove Selected</button>
@@ -209,37 +152,42 @@
           <div class="col-6">
             <div class="form-group">
               <label for="studentName">Student Name</label>
-              <input id="studentName" type="text" required value="ADEKUNLE SAMUEL" autocomplete="name" aria-describedby="errName" />
-              <div class="error-text" id="errName" aria-live="assertive">Please enter a name.</div>
+              <input id="studentName" type="text" required value="ADEKUNLE SAMUEL"/>
+              <div class="error-text" id="errName">Please enter a name.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="dob">Date of Birth (DOB)</label>
+              <input id="dob" type="date" required/>
+              <div class="error-text" id="errDob">Please enter a valid date.</div>
             </div>
           </div>
 
           <div class="col-6">
             <div class="form-group">
               <label for="admissionNo">Admission No</label>
-              <input id="admissionNo" type="text" required placeholder="e.g., GLC/2025/001"
-                     pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001" aria-describedby="errAdm" />
-              <div class="error-text" id="errAdm" aria-live="assertive">Use format GLC/2025/001.</div>
+              <input id="admissionNo" type="text" required placeholder="GLC/2025/001" pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
+              <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
             </div>
           </div>
 
           <div class="col-6">
             <div class="form-group">
               <label for="klass">Class</label>
-              <input id="klass" type="text" required value="SS1 A" aria-describedby="errClass" />
-              <div class="error-text" id="errClass" aria-live="assertive">Please enter a class.</div>
+              <input id="klass" type="text" required value="SS1 A"/>
+              <div class="error-text" id="errClass">Please enter a class.</div>
             </div>
           </div>
 
           <div class="col-6">
             <div class="form-group">
               <label for="gender">Gender</label>
-              <select id="gender" required aria-describedby="errGender">
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+              <select id="gender" required>
+                <option>Male</option><option>Female</option><option>Other</option>
               </select>
-              <div class="error-text" id="errGender" aria-live="assertive">Please select a gender.</div>
+              <div class="error-text" id="errGender">Please select a gender.</div>
             </div>
           </div>
 
@@ -247,7 +195,7 @@
             <div class="form-group">
               <label for="validForYears">Valid For</label>
               <select id="validForYears">
-                <option value="1">1 year</option>
+                <option value="1" selected>1 year</option>
                 <option value="2">2 years</option>
                 <option value="3">3 years</option>
                 <option value="4">4 years</option>
@@ -257,577 +205,422 @@
           </div>
 
           <div class="col-12">
-            <div class="form-group">
-              <label for="showGender">
-                <input type="checkbox" id="showGender" checked> Show Gender on card
-              </label>
-            </div>
+            <label><input type="checkbox" id="showGender" checked> Show Gender on card</label>
           </div>
 
           <div class="col-12">
             <div class="form-group">
               <label for="photoUrl">Student Photo URL</label>
-              <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg"
-                     value="https://via.placeholder.com/300x300?text=Student" aria-describedby="errPhoto" />
+              <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg" value="https://via.placeholder.com/300x300?text=Student"/>
               <div class="row">
-                <input id="photoFile" type="file" accept="image/*,image/heic,image/heif" />
-                <span class="help-text">Upload overrides URL. Large images are scaled.</span>
+                <input id="photoFile" type="file" accept="image/*,image/heic,image/heif"/>
+                <span class="help-text">Upload overrides URL. We auto-crop & compress.</span>
               </div>
-              <div class="error-text" id="errPhoto" aria-live="assertive"></div>
+              <div class="error-text" id="errPhoto"></div>
             </div>
           </div>
 
           <div class="col-6">
             <div class="form-group">
               <label for="phone">Phone</label>
-              <input id="phone" type="text" value="+234 801 123 4567" />
+              <input id="phone" type="text" value="+234 801 123 4567"/>
             </div>
           </div>
 
           <div class="col-6">
             <div class="form-group">
               <label for="email">Email</label>
-              <input id="email" type="email" value="info@greatlandmarkcollege.org" />
+              <input id="email" type="email" value="info@greatlandmarkcollege.org"/>
             </div>
           </div>
 
           <div class="col-12">
             <div class="form-group">
               <label for="address">Address</label>
-              <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure" />
+              <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure"/>
             </div>
           </div>
 
           <div class="col-12">
             <div class="row">
               <button class="btn" type="submit">Update Preview</button>
-              <button class="btn secondary" type="button" id="resetBtn">Reset to Defaults</button>
+              <button class="btn secondary" type="button" id="resetBtn">Reset</button>
             </div>
           </div>
         </div>
       </form>
-      <div class="loading">Processing...</div>
+
+      <div class="loading">Processing…</div>
     </div>
 
-    <!-- OUTPUT -->
+    <!-- TOOLS -->
     <h2>Generated ID Card (Current Student)</h2>
     <div class="tools">
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
       <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
       <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
 
-      <label class="inline">
-        <input type="checkbox" id="imageMode"> Render as images
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Paper <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
       </label>
 
-      <label class="btn secondary inline">
-        Paper size
-        <select id="paperSize">
-          <option value="A4">A4</option>
-          <option value="Letter">Letter</option>
-        </select>
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Duplex <select id="duplexMode"><option value="long" selected>Long-edge</option><option value="short">Short-edge</option></select>
       </label>
 
-      <label class="btn secondary inline">
-        Duplex Mode
-        <select id="duplexMode">
-          <option value="long">Long-edge (rotate 180°)</option>
-          <option value="short">Short-edge (no rotate)</option>
-        </select>
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Cards / sheet <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
       </label>
 
-      <label class="btn secondary inline">
-        Layout
-        <select id="layout">
-          <option value="4">4 per sheet (85.6 × 54 mm)</option>
-          <option value="8">8 per sheet (70 × 44 mm)</option>
-        </select>
-      </label>
-
-      <label class="inline"><span class="mini-label">Back X (mm)</span>
-        <input id="offsetX" class="mm" type="number" step="0.5" value="0">
-      </label>
-      <label class="inline"><span class="mini-label">Back Y (mm)</span>
-        <input id="offsetY" class="mm" type="number" step="0.5" value="0">
-      </label>
-
-      <label class="inline">
-        <input type="checkbox" id="mirrorBacks"> Mirror backs (rare)
+      <label style="display:flex;align-items:center;font-size:14px;color:#444">
+        <input type="checkbox" id="imageMode"> Render as images (for tricky printers)
       </label>
     </div>
 
-    <div class="id-stage" id="idStage"><!-- Single card preview --></div>
-    <div id="printPages" aria-hidden="true"><!-- Dynamically populated for printing --></div>
-
-    <p class="notes" id="pageCount">
-      Tip: Add students and use <b>Print Fronts</b> and <b>Print Backs</b>. Default is 4 cards per A4 (85.6×54 mm). Choose 8-up for compact cards.
-    </p>
+    <div class="id-stage" id="idStage"></div>
+    <div id="printPages" aria-hidden="true"></div>
+    <p class="notes" id="pageNote">Tip: Choose 4 or 8 cards per sheet. For duplex, print fronts then backs (long edge).</p>
   </div>
 
   <script>
-    (function () {
-      const CONFIG = {
-        defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
-        defaultLogo: '/glc-logo.jpg',
-        captureScale: 3,            // sharper raster for "Render as images"
-        debounceDelay: 300,
-        cardsPerPage: 4
-      };
+  (function(){
+    const CONFIG={ defaultPhoto:'https://via.placeholder.com/300x300?text=Student', defaultLogo:'/glc-logo.jpg', captureScale:2 };
 
-      // Elements
-      const elements = {
-        form: document.getElementById('form'),
-        fields: {
-          name: document.getElementById('studentName'),
-          adm: document.getElementById('admissionNo'),
-          klass: document.getElementById('klass'),
-          gender: document.getElementById('gender'),
-          validForYears: document.getElementById('validForYears'),
-          showGender: document.getElementById('showGender'),
-          photoUrl: document.getElementById('photoUrl'),
-          photoFile: document.getElementById('photoFile'),
-          phone: document.getElementById('phone'),
-          email: document.getElementById('email'),
-          address: document.getElementById('address'),
-          studentSelect: document.getElementById('studentSelect')
-        },
-        errors: {
-          name: document.getElementById('errName'),
-          adm: document.getElementById('errAdm'),
-          klass: document.getElementById('errClass'),
-          gender: document.getElementById('errGender'),
-          studentSelect: document.getElementById('errStudentSelect'),
-          photo: document.getElementById('errPhoto')
-        },
-        tools: {
-          flipBtn: document.getElementById('flipBtn'),
-          printFrontsBtn: document.getElementById('printFrontsBtn'),
-          printBacksBtn: document.getElementById('printBacksBtn'),
-          imageMode: document.getElementById('imageMode'),
-          resetBtn: document.getElementById('resetBtn'),
-          addStudentBtn: document.getElementById('addStudentBtn'),
-          removeStudentBtn: document.getElementById('removeStudentBtn'),
-          duplexMode: document.getElementById('duplexMode'),
-          offsetX: document.getElementById('offsetX'),
-          offsetY: document.getElementById('offsetY'),
-          paperSize: document.getElementById('paperSize'),
-          layout: document.getElementById('layout'),
-          mirrorBacks: document.getElementById('mirrorBacks')
-        },
-        idStage: document.getElementById('idStage'),
-        printPages: document.getElementById('printPages'),
-        pageCount: document.getElementById('pageCount'),
-        loading: document.querySelector('.loading')
-      };
-
-      let students = [{
-        name: 'ADEKUNLE SAMUEL',
-        adm: 'GLC/2025/001',
-        klass: 'SS1 A',
-        gender: 'Male',
-        validForYears: 1,
-        valid: '2026-09-28',
-        showGender: true,
-        photo: CONFIG.defaultPhoto,
-        phone: '+234 801 123 4567',
-        email: 'info@greatlandmarkcollege.org',
-        address: '45, Oke Alaro Rd, Abusoro, Akure'
-      }];
-      let currentStudentIndex = 0;
-      let debounceTimer;
-      const cardCaches = [];
-
-      // Utilities
-      const utils = {
-        sanitize(str){ return (str||'').replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`) },
-        showErr(el, show, msg){ if(!el) return; el.style.display = show ? 'block' : 'none'; if(msg) el.textContent = msg; },
-        isSafeUrl(url){ try{ const u = new URL(url); return u.protocol==='https:'||u.protocol==='http:' }catch{ return false } },
-        preloadImage(url){
-          return new Promise((resolve, reject)=>{
-            const img = new Image(); img.crossOrigin='anonymous'; img.src=url;
-            img.onload=()=>resolve(url); img.onerror=()=>reject(new Error('Failed to load image'));
-          });
-        }
-      };
-
-      function computeValidDate(years){
-        const today = new Date(); const valid = new Date(today);
-        valid.setFullYear(today.getFullYear() + years);
-        return valid.toISOString().split('T')[0];
+    const els={
+      form:document.getElementById('form'),
+      idStage:document.getElementById('idStage'),
+      printPages:document.getElementById('printPages'),
+      loading:document.querySelector('.loading'),
+      note:document.getElementById('pageNote'),
+      tools:{
+        flipBtn:document.getElementById('flipBtn'),
+        printFrontsBtn:document.getElementById('printFrontsBtn'),
+        printBacksBtn:document.getElementById('printBacksBtn'),
+        paperSize:document.getElementById('paperSize'),
+        duplexMode:document.getElementById('duplexMode'),
+        cardsPerPage:document.getElementById('cardsPerPage'),
+        imageMode:document.getElementById('imageMode'),
+        addStudentBtn:document.getElementById('addStudentBtn'),
+        removeStudentBtn:document.getElementById('removeStudentBtn')
+      },
+      fields:{
+        name:document.getElementById('studentName'),
+        dob:document.getElementById('dob'),
+        adm:document.getElementById('admissionNo'),
+        klass:document.getElementById('klass'),
+        gender:document.getElementById('gender'),
+        validForYears:document.getElementById('validForYears'),
+        showGender:document.getElementById('showGender'),
+        photoUrl:document.getElementById('photoUrl'),
+        photoFile:document.getElementById('photoFile'),
+        phone:document.getElementById('phone'),
+        email:document.getElementById('email'),
+        address:document.getElementById('address'),
+        studentSelect:document.getElementById('studentSelect')
+      },
+      errors:{
+        name:document.getElementById('errName'),
+        dob:document.getElementById('errDob'),
+        adm:document.getElementById('errAdm'),
+        klass:document.getElementById('errClass'),
+        gender:document.getElementById('errGender'),
+        photo:document.getElementById('errPhoto')
       }
+    };
 
-      // State
-      const state = {
-        save(){
-          try{
-            const data = { students, currentStudentIndex };
-            const serialized = JSON.stringify(data);
-            if (serialized.length > 4*1024*1024) alert('Warning: data is large; consider exporting.');
-            localStorage.setItem('glc_id_state', serialized);
-          }catch(err){ console.error('Failed to save state:', err); alert('Failed to save data. Storage may be full.'); }
-        },
-        load(){
-          try{
-            const raw = localStorage.getItem('glc_id_state'); if(!raw) return;
-            const s = JSON.parse(raw);
-            students = s.students.map(stu=>{ delete stu.signatureImg; return stu; }) || students;
-            currentStudentIndex = Math.min(s.currentStudentIndex||0, students.length-1);
-            cardCaches.length = 0; students.forEach(()=>cardCaches.push({frontCache:null, backCache:null}));
-            this.updateForm(); this.updateStudentSelect();
-          }catch(err){ console.error('Failed to load state:', err); }
-        },
-        updateForm(){
-          const student = students[currentStudentIndex] || {};
-          Object.entries(elements.fields).forEach(([k, el])=>{
-            if(k==='showGender'){ el.checked = student.showGender !== false; }
-            else if(k!=='studentSelect' && k!=='photoFile'){ el.value = student[k] || ''; }
-          });
-          elements.fields.photoFile.value = '';
-        },
-        updateStudentSelect(){
-          elements.fields.studentSelect.innerHTML = students.map((s,i)=> `<option value="${i}">Student ${i+1}${s.name?`: ${s.name}`:''}</option>`).join('');
-          elements.fields.studentSelect.value = currentStudentIndex;
-          elements.tools.removeStudentBtn.disabled = students.length <= 1;
-        },
-        updatePageCount(){
-          const perSheet = document.body.classList.contains('eight-up') ? 8 : 4;
-          const pageCount = Math.ceil(students.length / perSheet);
-          elements.pageCount.textContent = `Tip: ${students.length} card${students.length!==1?'s':''} will print on ${pageCount} sheet${pageCount!==1?'s':''} (${perSheet} per sheet).`;
-        }
-      };
+    let students=[{
+      name:'ADEKUNLE SAMUEL', dob:'', adm:'GLC/2025/001', klass:'SS1 A', gender:'Male', showGender:true,
+      validForYears:1, validUntil:futureDate(1), photo:CONFIG.defaultPhoto,
+      phone:'+234 801 123 4567', email:'info@greatlandmarkcollege.org', address:'45, Oke Alaro Rd, Abusoro, Akure'
+    }];
+    let idx=0;
 
-      // Photo
-      const photo = {
-        fileToDataUrl(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); },
-        async resizeImage(file, maxSize=300){
-          const img = new Image(); const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
-          img.src = await this.fileToDataUrl(file);
-          return new Promise(resolve=>{
-            img.onload=()=>{
-              const scale = Math.min(maxSize/img.width, maxSize/img.height, 1);
-              canvas.width = img.width*scale; canvas.height=img.height*scale;
-              ctx.drawImage(img,0,0,canvas.width,canvas.height);
-              resolve(canvas.toDataURL('image/jpeg', .85));
-            };
-            img.onerror=()=>resolve(CONFIG.defaultPhoto);
-          });
-        },
-        async setPhoto(){
-          elements.loading.classList.add('active'); utils.showErr(elements.errors.photo,false);
-          try{
-            const file = elements.fields.photoFile.files?.[0];
-            if(file){ const dataUrl = await this.resizeImage(file); students[currentStudentIndex].photo = dataUrl; elements.fields.photoUrl.value=''; return dataUrl; }
-            const url = elements.fields.photoUrl.value.trim();
-            if(url && utils.isSafeUrl(url)){ await utils.preloadImage(url); students[currentStudentIndex].photo = url; return url; }
-            students[currentStudentIndex].photo = CONFIG.defaultPhoto; return CONFIG.defaultPhoto;
-          }catch(err){
-            console.error('Photo processing error:', err); utils.showErr(elements.errors.photo,true,'Failed to process image.');
-            students[currentStudentIndex].photo = CONFIG.defaultPhoto; return CONFIG.defaultPhoto;
-          }finally{ elements.loading.classList.remove('active'); }
-        },
-        async preloadLogos(){ try{ await utils.preloadImage(CONFIG.defaultLogo); }catch(e){ console.error('Failed to preload logos:', e); } }
-      };
+    function futureDate(years){const d=new Date();d.setFullYear(d.getFullYear()+years);return d.toISOString().split('T')[0]}
+    function sanitize(s){return String(s||'').replace(/[<>&"']/g,c=>'&#'+c.charCodeAt(0)+';')}
+    function showErr(el,on,msg){if(!el)return; el.style.display=on?'block':'none'; if(msg)el.textContent=msg;}
+    function normalizeClass(s){return s.replace(/\b([A-Za-z]+)\s+(\d)/g,'$1$2').replace(/\s+/g,' ').trim()}
 
-      function shrinkToFit(el, max=170){
-        if(!el) return;
-        const start = parseFloat(getComputedStyle(el).fontSize)||12;
-        let f = start;
-        while(el.scrollWidth > max && f > 9){ f -= .5; el.style.fontSize = f + 'px'; }
-      }
-
-      // Form & Preview
-      const form = {
-        validateField(field, errorEl, pattern=null){
-          const value = field.value.trim(); const isValid = pattern ? new RegExp(pattern).test(value) : !!value;
-          utils.showErr(errorEl, !isValid); field.parentElement.classList.toggle('valid', isValid); field.parentElement.classList.toggle('invalid', !isValid);
-          return isValid;
-        },
-        updateStudentData(){
-          students[currentStudentIndex] = {
-            name: elements.fields.name.value,
-            adm: elements.fields.adm.value,
-            klass: elements.fields.klass.value,
-            gender: elements.fields.gender.value,
-            validForYears: parseInt(elements.fields.validForYears.value),
-            showGender: elements.fields.showGender.checked,
-            photo: students[currentStudentIndex]?.photo || CONFIG.defaultPhoto,
-            phone: elements.fields.phone.value,
-            email: elements.fields.email.value,
-            address: elements.fields.address.value
-          };
-          students[currentStudentIndex].valid = computeValidDate(students[currentStudentIndex].validForYears);
-        },
-        async updatePreview(){
-          this.updateStudentData();
-          const isValid = [
-            this.validateField(elements.fields.name, elements.errors.name),
-            this.validateField(elements.fields.adm, elements.errors.adm, elements.fields.adm.pattern),
-            this.validateField(elements.fields.klass, elements.errors.klass),
-            this.validateField(elements.fields.gender, elements.errors.gender)
-          ].every(Boolean);
-
-          // Preview only the current student
-          elements.idStage.innerHTML='';
-          const student = students[currentStudentIndex];
-          let genderHtml = student.showGender ? `<p class="kv"><strong>Gender:</strong> <span class="value">${utils.sanitize(student.gender)}</span></p>` : '';
-
-          elements.idStage.insertAdjacentHTML('beforeend', `
-            <div class="id-card-wrapper" aria-label="ID card preview">
-              <div class="id-card-container" id="card-${currentStudentIndex}">
-                <section class="face front" tabindex="0" aria-label="Front of ID card" aria-hidden="false">
-                  <header class="id-card-header">
-                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
-                    <h3>GREAT LANDMARK COLLEGE</h3>
-                  </header>
-                  <div class="body-front">
-                    <div class="photo"><img src="${student.photo}" alt="Student Photo" loading="lazy" crossorigin="anonymous"></div>
-                    <div class="details">
-                      <h4>STUDENT IDENTITY CARD</h4>
-                      <p class="kv"><strong>Student Name:</strong> <span class="value autoshrink">${utils.sanitize(student.name) || '—'}</span></p>
-                      <p class="kv"><strong>Admission No:</strong> <span class="value">${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
-                      <p class="kv"><strong>Class:</strong> <span class="value autoshrink">${utils.sanitize(student.klass) || '—'}</span></p>
-                      ${genderHtml}
-                    </div>
-                  </div>
-                  <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
-                </section>
-                <section class="face back" tabindex="0" aria-label="Back of ID card" aria-hidden="true">
-                  <header class="id-card-header">
-                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
-                    <h3>GREAT LANDMARK COLLEGE</h3>
-                  </header>
-                  <div class="body-back">
-                    <div class="meta">
-                      <div class="title">Valid Until: ${student.valid}</div>
-                      <div>Address: ${utils.sanitize(student.address) || '—'}</div>
-                      <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
-                      <div>Email: ${utils.sanitize(student.email) || '—'}</div>
-                      <div>Website: www.greatlandmarkcollege.org</div>
-                    </div>
-                  </div>
-                  <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
-                </section>
-              </div>
-            </div>
-          `);
-
-          // shrink long fields in preview
-          elements.idStage.querySelectorAll('.autoshrink').forEach(el=>shrinkToFit(el));
-
-          // Generate print pages
-          elements.printPages.innerHTML='';
-          const useImages = elements.tools.imageMode.checked;
-          const dataUrls=[];
-          if(useImages){
-            elements.loading.classList.add('active');
-            const tempContainer=document.createElement('div');
-            tempContainer.style.position='absolute'; tempContainer.style.left='-9999px';
-            tempContainer.style.width='85.6mm'; tempContainer.style.height='54mm';
-            document.body.appendChild(tempContainer);
-            for(let i=0;i<students.length;i++){
-              const s=students[i];
-              const gHtml = s.showGender ? `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(s.gender)}</span></p>` : '';
-              tempContainer.innerHTML = `
-                <section class="face front">
-                  <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="Logo" /><h3>GREAT LANDMARK COLLEGE</h3></header>
-                  <div class="body-front">
-                    <div class="photo"><img src="${s.photo}" alt="Student Photo"></div>
-                    <div class="details">
-                      <h4>STUDENT IDENTITY CARD</h4>
-                      <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(s.name) || '—'}</span></p>
-                      <p class="kv"><strong>Admission No:</strong> <span>${s.adm?.match(elements.fields.adm.pattern) ? s.adm : '—'}</span></p>
-                      <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(s.klass) || '—'}</span></p>
-                      ${gHtml}
-                    </div>
-                  </div>
-                  <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
-                </section>`;
-              await document.fonts.ready;
-              const frontUrl = await html2canvas(tempContainer.firstChild, { scale:CONFIG.captureScale, useCORS:true, logging:false, backgroundColor:null }).then(c=>c.toDataURL('image/png'));
-
-              tempContainer.innerHTML = `
-                <section class="face back">
-                  <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="Logo" /><h3>GREAT LANDMARK COLLEGE</h3></header>
-                  <div class="body-back">
-                    <div class="meta">
-                      <div class="title">Valid Until: ${s.valid}</div>
-                      <div>Address: ${utils.sanitize(s.address) || '—'}</div>
-                      <div>Phone: ${utils.sanitize(s.phone) || '—'}</div>
-                      <div>Email: ${utils.sanitize(s.email) || '—'}</div>
-                      <div>Website: www.greatlandmarkcollege.org</div>
-                    </div>
-                  </div>
-                  <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
-                </section>`;
-              await document.fonts.ready;
-              const backUrl = await html2canvas(tempContainer.firstChild, { scale:CONFIG.captureScale, useCORS:true, logging:false, backgroundColor:null }).then(c=>c.toDataURL('image/png'));
-
-              dataUrls.push({front:frontUrl, back:backUrl});
-            }
-            document.body.removeChild(tempContainer);
-            elements.loading.classList.remove('active');
-          }
-
-          // Determine per-sheet count
-          const perSheet = document.body.classList.contains('eight-up') ? 8 : 4;
-          for(let i=0;i<students.length;i+=perSheet){
-            const pageStudents = students.slice(i, i+perSheet);
-            let frontHtml = '<div class="front-grid">';
-            let backHtml  = '<div class="back-grid">';
-            pageStudents.forEach((s, idx)=>{
-              const gi = i + idx;
-              if(useImages){
-                const {front, back} = dataUrls[gi];
-                frontHtml += `<div class="print-id"><img src="${front}" style="width:100%;height:100%;display:block"/></div>`;
-                backHtml  += `<div class="print-id"><img src="${back}"  style="width:100%;height:100%;display:block"/></div>`;
-              }else{
-                const gHtml = s.showGender ? `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(s.gender)}</span></p>` : '';
-                frontHtml += `
-                  <div class="print-id" aria-hidden="true">
-                    <section class="face front">
-                      <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
-                      <div class="body-front">
-                        <div class="photo"><img src="${s.photo}" alt="Student Photo"></div>
-                        <div class="details">
-                          <h4>STUDENT IDENTITY CARD</h4>
-                          <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(s.name) || '—'}</span></p>
-                          <p class="kv"><strong>Admission No:</strong> <span>${s.adm?.match(elements.fields.adm.pattern) ? s.adm : '—'}</span></p>
-                          <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(s.klass) || '—'}</span></p>
-                          ${gHtml}
-                        </div>
-                      </div>
-                      <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
-                    </section>
-                  </div>`;
-                backHtml += `
-                  <div class="print-id" aria-hidden="true">
-                    <section class="face back">
-                      <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
-                      <div class="body-back">
-                        <div class="meta">
-                          <div class="title">Valid Until: ${s.valid}</div>
-                          <div>Address: ${utils.sanitize(s.address) || '—'}</div>
-                          <div>Phone: ${utils.sanitize(s.phone) || '—'}</div>
-                          <div>Email: ${utils.sanitize(s.email) || '—'}</div>
-                          <div>Website: www.greatlandmarkcollege.org</div>
-                        </div>
-                      </div>
-                      <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
-                    </section>
-                  </div>`;
-              }
-            });
-            frontHtml += '</div>'; backHtml += '</div>';
-            elements.printPages.insertAdjacentHTML('beforeend', `<div class="print-page">${frontHtml}${backHtml}</div>`);
-          }
-
-          cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || {frontCache:null, backCache:null};
-          card.clearCache(currentStudentIndex);
-          state.save(); state.updateStudentSelect(); state.updatePageCount();
-          return isValid;
-        }
-      };
-
-      // Card image capture (kept for future download features)
-      const card = {
-        clearCache(index){
-          if(index!==undefined && cardCaches[index]){ cardCaches[index].frontCache = cardCaches[index].backCache = null; }
-        }
-      };
-
-      // Print Helper
-      const printHelper = {
-        togglePrintBack(isBack){
-          document.querySelectorAll('.print-page').forEach(page=>{
-            if(isBack) page.classList.add('print-back'); else page.classList.remove('print-back');
-          });
-        }
-      };
-
-      // Event Handlers
-      const events = {
-        init(){
-          elements.form.addEventListener('input', (e)=>{
-            clearTimeout(debounceTimer);
-            if(e.target === elements.fields.photoUrl){
-              elements.fields.photoFile.value=''; photo.setPhoto().then(()=>form.updatePreview());
-            }
-            debounceTimer = setTimeout(()=>form.updatePreview(), CONFIG.debounceDelay);
-          });
-
-          elements.fields.photoFile.addEventListener('change', async ()=>{ await photo.setPhoto(); form.updatePreview(); });
-
-          elements.form.addEventListener('submit', async (e)=>{ e.preventDefault(); if(!form.updatePreview()) return; await photo.setPhoto(); });
-
-          elements.tools.flipBtn.addEventListener('click', ()=>{
-            const container = document.querySelector(`#card-${currentStudentIndex}`);
-            if(container){
-              container.classList.toggle('flipped');
-              const isFlipped = container.classList.contains('flipped');
-              container.querySelector('.front').setAttribute('aria-hidden', isFlipped);
-              container.querySelector('.back').setAttribute('aria-hidden', !isFlipped);
-            }
-          });
-
-          elements.idStage.addEventListener('keydown', (e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); elements.tools.flipBtn.click(); } });
-
-          elements.tools.printFrontsBtn.addEventListener('click', ()=>{ printHelper.togglePrintBack(false); window.print(); });
-          elements.tools.printBacksBtn .addEventListener('click', ()=>{ printHelper.togglePrintBack(true);  window.print(); });
-
-          elements.tools.imageMode.addEventListener('change', ()=> form.updatePreview());
-
-          elements.tools.paperSize.addEventListener('change', (e)=>{
-            if(e.target.value==="Letter"){ document.documentElement.style.setProperty('--page-w','215.9mm'); document.documentElement.style.setProperty('--page-h','279.4mm'); }
-            else { document.documentElement.style.setProperty('--page-w','210mm'); document.documentElement.style.setProperty('--page-h','297mm'); }
-            form.updatePreview();
-          });
-
-          elements.tools.layout.addEventListener('change', (e)=>{
-            if(e.target.value==='8'){ document.body.classList.add('eight-up'); }
-            else { document.body.classList.remove('eight-up'); }
-            form.updatePreview();
-          });
-
-          elements.tools.duplexMode.addEventListener('change', (e)=>{
-            document.documentElement.style.setProperty('--duplex-rotate', e.target.value==='long' ? '180deg' : '0deg');
-          });
-
-          // Live back alignment nudges
-          elements.tools.offsetX.addEventListener('input', (e)=>{ document.documentElement.style.setProperty('--back-offset-x', `${e.target.value}mm`); });
-          elements.tools.offsetY.addEventListener('input', (e)=>{ document.documentElement.style.setProperty('--back-offset-y', `${e.target.value}mm`); });
-
-          // Rare mirror fix
-          elements.tools.mirrorBacks.addEventListener('change', (e)=>{
-            document.documentElement.style.setProperty('--back-scale-x', e.target.checked ? '-1' : '1');
-          });
-
-          elements.tools.resetBtn.addEventListener('click', ()=>{ localStorage.removeItem('glc_id_state'); window.location.reload(); });
-
-          elements.tools.addStudentBtn.addEventListener('click', ()=>{
-            students.push({ name:'', adm:'', klass:'', gender:'Male', validForYears:1, valid:computeValidDate(1), showGender:true, photo:CONFIG.defaultPhoto, phone:'', email:'', address:'' });
-            currentStudentIndex = students.length - 1; state.updateForm(); form.updatePreview();
-          });
-
-          elements.tools.removeStudentBtn.addEventListener('click', ()=>{
-            if(students.length<=1) return;
-            students.splice(currentStudentIndex,1);
-            currentStudentIndex = Math.min(currentStudentIndex, students.length-1);
-            state.updateForm(); form.updatePreview();
-          });
-
-          elements.fields.studentSelect.addEventListener('change', (e)=>{ currentStudentIndex=parseInt(e.target.value,10); state.updateForm(); form.updatePreview(); });
-
-          if(!window.html2canvas){ alert('html2canvas not loaded.'); }
-        }
-      };
-
-      // Boot
-      window.addEventListener('load', ()=>{
-        state.load();
-        photo.preloadLogos().then(()=>{ form.updatePreview(); });
-        events.init();
+    async function preload(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>res();i.onerror=()=>rej();i.src=src;});}
+    async function fileToDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});}
+    async function resizeImage(file,max=360){
+      const data=await fileToDataUrl(file); const img=new Image(); img.src=data;
+      return new Promise(resolve=>{
+        img.onload=()=>{const s=Math.min(max/img.width,max/img.height,1);const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',0.82));};
+        img.onerror=()=>resolve(CONFIG.defaultPhoto);
       });
+    }
+
+    function updateSelect(){
+      els.fields.studentSelect.innerHTML = students.map((s,i)=>`<option value="${i}">Student ${i+1}${s.name?`: ${s.name}`:''}</option>`).join('');
+      els.fields.studentSelect.value = idx;
+      const per = Number(els.tools.cardsPerPage.value);
+      const pages = Math.ceil(students.length/per)||1;
+      els.note.textContent = `${students.length} card${students.length!==1?'s':''} • ${per} per sheet • about ${pages} page${pages!==1?'s':''}.`;
+    }
+
+    function loadForm(){
+      const s=students[idx];
+      els.fields.name.value=s.name||''; els.fields.dob.value=s.dob||''; els.fields.adm.value=s.adm||'';
+      els.fields.klass.value=s.klass||''; els.fields.gender.value=s.gender||'Male';
+      els.fields.validForYears.value=s.validForYears||1; els.fields.showGender.checked=s.showGender!==false;
+      els.fields.photoUrl.value=(s.photo&&s.photo.startsWith('http'))?s.photo:''; els.fields.photoFile.value='';
+      els.fields.phone.value=s.phone||''; els.fields.email.value=s.email||''; els.fields.address.value=s.address||'';
+    }
+
+    function readFormIntoState(){
+      const s=students[idx];
+      s.name=els.fields.name.value.trim();
+      s.dob=els.fields.dob.value;
+      s.adm=els.fields.adm.value.trim();
+      s.klass=normalizeClass(els.fields.klass.value.trim());
+      s.gender=els.fields.gender.value;
+      s.validForYears=parseInt(els.fields.validForYears.value||'1',10);
+      s.validUntil=futureDate(s.validForYears);
+      s.showGender=els.fields.showGender.checked;
+      s.phone=els.fields.phone.value.trim();
+      s.email=els.fields.email.value.trim();
+      s.address=els.fields.address.value.trim();
+    }
+
+    function validField(input,errEl,pattern){const v=input.value.trim();const ok=pattern?new RegExp(pattern).test(v):!!v;showErr(errEl,!ok);return ok;}
+
+    async function updatePreview(){
+      readFormIntoState();
+      const ok=[
+        validField(els.fields.name,els.errors.name),
+        validField(els.fields.dob,els.errors.dob),
+        validField(els.fields.adm,els.errors.adm,els.fields.adm.pattern),
+        validField(els.fields.klass,els.errors.klass),
+        validField(els.fields.gender,els.errors.gender)
+      ].every(Boolean);
+
+      const s=students[idx];
+      const longName = (s.name||'').length>24;
+
+      els.idStage.innerHTML = `
+        <div class="id-card-wrapper">
+          <div class="id-card-container" id="card-${idx}">
+            <section class="face front" aria-hidden="false">
+              <header class="id-card-header">
+                <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" loading="eager" crossorigin="anonymous"/>
+                <h3>GREAT LANDMARK COLLEGE</h3>
+              </header>
+              <div class="body-front">
+                <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo" crossorigin="anonymous" loading="lazy"></div>
+                <div class="details">
+                  <h4>STUDENT IDENTITY CARD</h4>
+                  <p class="kv name ${longName?'long':''}"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
+                  <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
+                  <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
+                  <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
+                  ${s.showGender?`<p class="kv"><strong>Gender:</strong> <span>${sanitize(s.gender)}</span></p>`:''}
+                </div>
+              </div>
+              <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
+            </section>
+
+            <section class="face back" aria-hidden="true">
+              <header class="id-card-header">
+                <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" loading="eager" crossorigin="anonymous"/>
+                <h3>GREAT LANDMARK COLLEGE</h3>
+              </header>
+              <div class="body-back">
+                <div class="meta">
+                  <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${s.validUntil}</div>
+                  <div>Address: ${sanitize(s.address)||'—'}</div>
+                  <div>Phone: ${sanitize(s.phone)||'—'}</div>
+                  <div>Email: ${sanitize(s.email)||'—'}</div>
+                  <div>Website: www.greatlandmarkcollege.org</div>
+                </div>
+              </div>
+              <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
+            </section>
+          </div>
+        </div>`;
+
+      await buildPrintPages();
+      return ok;
+    }
+
+    function htmlFrontCard(s){
+      const longName=(s.name||'').length>24;
+      const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
+      wrap.innerHTML=`<div class="id-card-container">
+        <section class="face print">
+          <header class="id-card-header">
+            <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous"/>
+            <h3>GREAT LANDMARK COLLEGE</h3>
+          </header>
+          <div class="body-front">
+            <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo" crossorigin="anonymous"></div>
+            <div class="details">
+              <h4>STUDENT IDENTITY CARD</h4>
+              <p class="kv name ${longName?'long':''}"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
+              <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
+              <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
+              <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
+              ${s.showGender?`<p class="kv"><strong>Gender:</strong> <span>${sanitize(s.gender)}</span></p>`:''}
+            </div>
+          </div>
+          <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
+        </section>
+      </div>`;
+      return wrap;
+    }
+    function htmlBackCard(s){
+      const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
+      wrap.innerHTML=`<div class="id-card-container">
+        <section class="face print">
+          <header class="id-card-header">
+            <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous"/>
+            <h3>GREAT LANDMARK COLLEGE</h3>
+          </header>
+          <div class="body-back">
+            <div class="meta">
+              <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${s.validUntil}</div>
+              <div>Address: ${sanitize(s.address)||'—'}</div>
+              <div>Phone: ${sanitize(s.phone)||'—'}</div>
+              <div>Email: ${sanitize(s.email)||'—'}</div>
+              <div>Website: www.greatlandmarkcollege.org</div>
+            </div>
+          </div>
+          <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
+        </section>
+      </div>`;
+      return wrap;
+    }
+
+    async function renderAllToImages(){
+      els.loading.classList.add('active');
+      const tmp=document.createElement('div');
+      tmp.style.position='absolute'; tmp.style.left='-9999px';
+      tmp.style.width='var(--card-w)'; tmp.style.height='var(--card-h)';
+      document.body.appendChild(tmp);
+
+      const out=[];
+      for(let i=0;i<students.length;i++){
+        const s=students[i];
+        tmp.innerHTML=''; tmp.appendChild(htmlFrontCard(s));
+        await document.fonts.ready;
+        const front=await html2canvas(tmp.firstElementChild.querySelector('.face'),{scale:2,useCORS:true,backgroundColor:null}).then(c=>c.toDataURL('image/png'));
+        tmp.innerHTML=''; tmp.appendChild(htmlBackCard(s));
+        await document.fonts.ready;
+        const back=await html2canvas(tmp.firstElementChild.querySelector('.face'),{scale:2,useCORS:true,backgroundColor:null}).then(c=>c.toDataURL('image/png'));
+        out.push({front,back});
+      }
+      document.body.removeChild(tmp);
+      els.loading.classList.remove('active');
+      return out;
+    }
+
+    async function buildPrintPages(){
+      const per=Number(els.tools.cardsPerPage.value); const cols=2; const rows=per/cols;
+      const gap = per===8 ? '6mm' : '10mm';
+      const useImages=els.tools.imageMode.checked;
+      els.printPages.innerHTML='';
+
+      let images=null;
+      if(useImages){ images=await renderAllToImages(); }
+
+      for(let i=0;i<students.length;i+=per){
+        const pageStudents=students.slice(i,i+per);
+        const page=document.createElement('div'); page.className='print-page';
+
+        const front=document.createElement('div'); front.className='grid-surface front-surface';
+        front.style.gridTemplateColumns=`repeat(${cols}, var(--card-w))`;
+        front.style.gridTemplateRows=`repeat(${rows}, var(--card-h))`;
+        front.style.gap=gap;
+
+        const back=document.createElement('div'); back.className='grid-surface back-surface';
+        back.style.gridTemplateColumns=`repeat(${cols}, var(--card-w))`;
+        back.style.gridTemplateRows=`repeat(${rows}, var(--card-h))`;
+        back.style.gap=gap;
+
+        pageStudents.forEach((s,ix)=>{
+          const gi=i+ix;
+          if(useImages){
+            const fw=document.createElement('div'); fw.className='id-card-wrapper print';
+            fw.innerHTML=`<img src="${images[gi].front}" style="width:100%;height:100%;display:block">`;
+            const bw=document.createElement('div'); bw.className='id-card-wrapper print';
+            bw.innerHTML=`<img src="${images[gi].back}" style="width:100%;height:100%;display:block">`;
+            front.appendChild(fw); back.appendChild(bw);
+          }else{
+            front.appendChild(htmlFrontCard(s));
+            back.appendChild(htmlBackCard(s));
+          }
+        });
+
+        page.appendChild(front); page.appendChild(back);
+        els.printPages.appendChild(page);
+      }
+    }
+
+    /* EVENTS */
+    function bind(){
+      els.form.addEventListener('input', async (e)=>{
+        if(e.target===els.fields.photoUrl && els.fields.photoUrl.value){
+          try{ await preload(els.fields.photoUrl.value); students[idx].photo=els.fields.photoUrl.value; }
+          catch{ showErr(els.errors.photo,true,'Failed to load photo URL.'); }
+        }
+        updatePreview();
+      });
+
+      els.fields.photoFile.addEventListener('change', async ()=>{
+        const f=els.fields.photoFile.files?.[0]; if(!f) return;
+        const data=await resizeImage(f); students[idx].photo=data; els.fields.photoUrl.value=''; updatePreview();
+      });
+
+      els.form.addEventListener('submit',(e)=>{e.preventDefault(); updatePreview();});
+
+      els.tools.flipBtn.addEventListener('click', ()=>{
+        const c=document.getElementById(`card-${idx}`); if(!c)return;
+        c.classList.toggle('flipped');
+        const f=c.classList.contains('flipped');
+        c.querySelector('.front').setAttribute('aria-hidden',f);
+        c.querySelector('.back').setAttribute('aria-hidden',!f);
+      });
+
+      els.tools.paperSize.addEventListener('change',(e)=>{
+        if(e.target.value==='Letter'){document.documentElement.style.setProperty('--page-w','215.9mm');document.documentElement.style.setProperty('--page-h','279.4mm');}
+        else{document.documentElement.style.setProperty('--page-w','210mm');document.documentElement.style.setProperty('--page-h','297mm');}
+        buildPrintPages();
+      });
+
+      els.tools.duplexMode.addEventListener('change',(e)=>{
+        document.documentElement.style.setProperty('--duplex-rotate', e.target.value==='long'?'180deg':'0deg');
+      });
+
+      els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect(); buildPrintPages();});
+      els.tools.imageMode.addEventListener('change', ()=>buildPrintPages());
+
+      document.getElementById('resetBtn').addEventListener('click', ()=>{localStorage.removeItem('glc_id_state_v2'); location.reload();});
+
+      document.getElementById('addStudentBtn').addEventListener('click', ()=>{
+        students.push({name:'',dob:'',adm:'',klass:'',gender:'Male',showGender:true,validForYears:1,validUntil:futureDate(1),photo:CONFIG.defaultPhoto,phone:'',email:'',address:''});
+        idx=students.length-1; loadForm(); updateSelect(); updatePreview();
+      });
+
+      document.getElementById('removeStudentBtn').addEventListener('click', ()=>{
+        if(students.length<=1) return;
+        students.splice(idx,1); idx=Math.max(0,idx-1); loadForm(); updateSelect(); updatePreview();
+      });
+
+      els.fields.studentSelect.addEventListener('change',(e)=>{idx=parseInt(e.target.value,10); loadForm(); updatePreview();});
+    }
+
+    (async function init(){
+      try{
+        const raw=localStorage.getItem('glc_id_state_v2');
+        if(raw){const data=JSON.parse(raw); students=data.students||students; idx=Math.min(data.idx||0,students.length-1);}
+      }catch{}
+      bind();
+      updateSelect();
+      loadForm();
+      try{await preload(CONFIG.defaultLogo);}catch{}
+      updatePreview();
+      setInterval(()=>{localStorage.setItem('glc_id_state_v2', JSON.stringify({students,idx}));},1500);
     })();
+  })();
   </script>
 </body>
 </html>
