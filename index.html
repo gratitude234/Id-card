@@ -15,7 +15,7 @@
   <style>
     :root{
       --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c; --bg:#f4f7f6; --ink:#15202b;
-      --radius:14px; --pad:14px; --shadow:0 10px 30px rgba(0,0,0,.10);
+      --radius:12px; --pad:16px; --shadow:0 4px 12px rgba(0,0,0,.10);
 
       /* paper */
       --page-w:210mm; --page-h:297mm;
@@ -33,78 +33,49 @@
     html,body{height:100%;margin:0}
     body{
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;
-      color:var(--ink);
-      /* Soft gradient background with subtle pattern */
-      background:
-        radial-gradient(32rem 32rem at 10% -10%, rgba(13,47,111,.06), transparent 60%),
-        radial-gradient(36rem 36rem at 110% 10%, rgba(249,168,37,.08), transparent 55%),
-        linear-gradient(180deg,#f8fafc 0%, #eef2f7 100%);
-      padding:18px; display:flex; flex-direction:column; align-items:center;
+      background:var(--bg); color:var(--ink);
+      padding:16px; display:flex; flex-direction:column; align-items:center;
     }
 
-    .container{
-      background:#fff;
-      border-radius:18px;
-      box-shadow:var(--shadow);
-      border:1px solid rgba(13,47,111,.06);
-      max-width:1040px;width:100%;
-      padding:22px 22px 10px;
-      position:relative;overflow:hidden;
-    }
-
-    /* Decorative brand stripe */
-    .container::before{
-      content:"";
-      position:absolute; inset:0 0 auto 0; height:6px;
-      background:linear-gradient(90deg,var(--blue), var(--yellow));
-    }
-
-    h1{margin:8px 0 16px;text-align:center;color:var(--blue);font-size:28px;letter-spacing:.2px}
-    h2{margin:18px 0 10px;color:#0f2a5f;border-bottom:2px solid #eef1f7;padding-bottom:8px;font-size:20px}
+    .container{background:#fff;border-radius:10px;box-shadow:var(--shadow);max-width:980px;width:100%;padding:20px}
+    h1{margin:0 0 12px;text-align:center;color:var(--blue);font-size:26px}
+    h2{margin:18px 0 8px;color:var(--blue);border-bottom:2px solid #eee;padding-bottom:6px;font-size:20px}
 
     /* grid + form */
     .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
     .col-6{grid-column:span 6} .col-12{grid-column:span 12}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .form-group{display:flex;flex-direction:column;gap:6px;position:relative;min-width:0}
-    .form-group label{font-weight:600;color:#334155;font-size:14px}
+    .form-group{display:flex;flex-direction:column;gap:6px;position:relative}
+    .form-group label{font-weight:600;color:#444;font-size:14px}
     .form-group input[type="text"],.form-group input[type="date"],.form-group input[type="url"],.form-group input[type="email"],.form-group select{
-      padding:12px 14px;border:1px solid #dfe4ea;border-radius:12px;font-size:15px;background:#fff;min-width:0
+      padding:var(--pad);border:1px solid #ddd;border-radius:10px;font-size:16px;background:#fff
     }
-    .form-group input:focus,.form-group select:focus{outline:2px solid rgba(13,47,111,.20);border-color:#98b0d6;box-shadow:0 0 0 3px rgba(13,47,111,.06)}
-    .help-text{font-size:12px;color:#667085}
+    .form-group input:focus,.form-group select:focus{outline:2px solid #5b9dd9;border-color:#5b9dd9}
+    .help-text{font-size:12px;color:#777}
     .error-text{display:none;color:#b00020;font-size:12px}
-    .student-controls{display:flex;gap:10px;align-items:stretch;margin-bottom:12px;flex-wrap:wrap}
-    .student-controls .form-group{flex:1 1 280px}
-    .student-controls select{flex:1;min-width:0}
 
-    .btn{
-      background:var(--blue);color:#fff;border:0;border-radius:12px;
-      padding:12px 16px;font-weight:700;cursor:pointer;
-      transition:.15s transform,.2s background,.2s box-shadow; white-space:nowrap
+    .student-controls{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px
     }
-    .btn:hover{background:#123574;transform:translateY(-1px);box-shadow:0 6px 18px rgba(13,47,111,.18)}
-    .btn:active{transform:translateY(0)}
-    .btn.secondary{background:#f2f6ff;color:#0f2a5f;border:1px solid #dbe5ff}
-    .btn.secondary:hover{background:#eaf1ff}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:12px 0}
-    .tools .btn, .tools label{border-radius:12px}
+    .student-controls select{flex:1;min-width:220px}
 
-    /* make tool "labels" behave nicely on small screens */
-    .tools label{display:inline-flex;gap:.5rem;align-items:center;padding:10px 12px;border:1px solid #e5e9f2;background:#f8fbff;border-radius:12px}
-    .tools select{border:1px solid #dfe4ea;border-radius:10px;padding:8px 10px;background:#fff}
+    .btn{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;transition:.15s transform,.2s background; white-space:nowrap}
+    .btn:hover{background:#1e3a8a;transform:scale(1.02)}
+    .btn:active{transform:scale(.98)}
+    .btn.secondary{background:#eef2ff;color:#1e2a78;border:1px solid #dfe3ff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
 
     /* preview card */
     .id-stage{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
-    .id-card-wrapper{width:360px;aspect-ratio:85.6/54;position:relative;margin:12px auto 6px}
+    .id-card-wrapper{width:350px;aspect-ratio:85.6/54;position:relative;margin:12px auto 0;max-width:100%}
     .id-card-container{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s}
     .id-card-container.flipped{transform:rotateY(180deg)}
 
     /* FLEX COLUMN => footer pinned */
     .face{
-      position:absolute; inset:0; background:#fff; border-radius:16px;
-      box-shadow:0 10px 24px rgba(0,0,0,.16); overflow:hidden;
+      position:absolute; inset:0; background:#fff; border-radius:var(--radius);
+      box-shadow:0 4px 15px rgba(0,0,0,.18); overflow:hidden;
       display:flex; flex-direction:column; backface-visibility:hidden;
     }
     .back{transform:rotateY(180deg)}
@@ -124,11 +95,11 @@
     .body-back{flex:1 1 auto;min-height:0;padding:6mm;display:block;text-align:center}
     .meta{font-size:3.2mm;line-height:1.3}
 
-    .photo{width:74px;height:74px;border:2px solid var(--yellow);border-radius:12px;overflow:hidden;flex-shrink:0;background:#fff}
+    .photo{width:74px;height:74px;border:2px solid var(--yellow);border-radius:10px;overflow:hidden;flex-shrink:0}
     .photo img{width:100%;height:100%;object-fit:cover;object-position:center}
 
     .details{flex:1;min-width:0}
-    .details h4{margin:0 0 6px;font-size:13px;color:var(--blue);border-bottom:1px solid #eef1f7;padding-bottom:4px;font-weight:800}
+    .details h4{margin:0 0 6px;font-size:13px;color:var(--blue);border-bottom:1px solid #eee;padding-bottom:4px;font-weight:800}
     .kv{display:flex;gap:8px;margin:3px 0;font-size:11px;line-height:1.35}
     .kv strong{color:var(--blue);min-width:92px}
     .kv span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -171,7 +142,7 @@
     .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
     .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
 
-    .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:10px;z-index:1000}
+    .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
     .loading.active{display:flex;gap:8px}
     .loading::before{content:"⏳"}
 
@@ -180,34 +151,47 @@
       @page{size:auto;margin:0}
       html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
       body{background:#fff;padding:0;margin:0}
+
+      /* hide app chrome */
       .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
+
+      /* show print host */
       #printPages{display:block !important}
+
       .id-card-header{background-color:var(--blue) !important;color:#fff !important;border-bottom-color:var(--yellow) !important}
       .footer{background-color:var(--red) !important;color:#fff !important}
     }
 
-    /* ------- RESPONSIVE ------- */
-    @media (max-width:1024px){
-      .id-card-wrapper{width:340px}
-    }
+    /* ===== Mobile refinements ===== */
     @media (max-width:768px){
       body{padding:12px}
-      .container{padding:18px 16px 12px}
+      .container{padding:16px}
+
       .grid{grid-template-columns:1fr}
       .col-6,.col-12{grid-column:span 1}
-      .btn{width:100%}
-      .id-card-wrapper{max-width:340px;width:100%}
-      .tools{justify-content:stretch}
-      .tools > *{flex:1 1 48%; min-width:0}
-      .tools label{justify-content:space-between}
-      .student-controls{gap:8px}
-      .student-controls .form-group{flex:1 1 100%}
-      .student-controls .btn{flex:1 1 48%}
-    }
-    @media (max-width:480px){
-      .tools{gap:8px}
-      .tools > *{flex:1 1 100%}
-      .id-card-header h3{font-size:13px}
+
+      /* Make student controls stack cleanly */
+      .student-controls{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
+        align-items:stretch;
+      }
+      .student-controls .form-group{margin:0}
+      .student-controls select{min-width:0;width:100%}
+      .student-controls .btn{width:100%}
+
+      /* Only form buttons go full width on mobile */
+      .form-section .row .btn{width:100%}
+
+      /* Keep toolbar tidy; don't stretch those buttons */
+      .tools .btn,
+      .tools label.btn{width:auto}
+      .tools label{gap:.5rem}
+
+      /* Tighten card on small screens */
+      .id-card-wrapper{max-width:360px}
+      .id-card-header h3{font-size:14px}
       .kv{font-size:10px}
       .footer{font-size:8px}
     }
@@ -346,15 +330,15 @@
       <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
       <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
 
-      <label class="btn secondary" style="gap:.6rem;align-items:center">
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
         Paper
         <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
       </label>
-      <label class="btn secondary" style="gap:.6rem;align-items:center">
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
         Duplex (Edge)
         <select id="duplexMode"><option value="long" selected>Long-edge (rotate 180°)</option><option value="short">Short-edge (0°)</option></select>
       </label>
-      <label class="btn secondary" style="gap:.6rem;align-items:center">
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
         Cards / sheet
         <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
       </label>
@@ -541,7 +525,7 @@
           </div>
         </div>`;
 
-      await buildPrintPages('front'); // keep preview and print pages in sync
+      await buildPrintPages('front'); // keep preview & print pages in sync
       return ok;
     }
 
@@ -637,7 +621,7 @@
     function backTransform(){
       const mode = els.tools.duplexMode.value; // 'long' or 'short'
       const mirror = els.tools.mirrorBack.checked;
-      if (mirror) return 'scaleX(-1)';           // real mirror fix (rare)
+      if (mirror) return 'scaleX(-1)';           // real mirror fix
       return (mode==='long') ? 'rotate(180deg)' : 'none'; // typical duplex alignment
     }
 
@@ -684,8 +668,8 @@
 
     /* print helpers */
     async function doPrint(side){
-      await buildPrintPages(side);  // only the requested side exists
-      requestAnimationFrame(()=>{ setTimeout(()=>window.print(), 60); });
+      await buildPrintPages(side);  // only the requested side exists => zero confusion
+      requestAnimationFrame(()=>{ setTimeout(()=>window.print(), 50); });
     }
 
     /* EVENTS */
@@ -743,7 +727,7 @@
 
       els.fields.studentSelect.addEventListener('change',(e)=>{idx=parseInt(e.target.value,10); loadForm(); updatePreview();});
 
-      // PRINT buttons
+      // PRINT buttons: build only that side; no CSS mode classes anymore
       els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
       els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
     }
