@@ -22,21 +22,15 @@
       --padding-sm: 16px;
       --shadow: 0 4px 12px rgba(0,0,0,.1);
       --focus: #5b9dd9;
-
-      /* page sizing */
-      --page-w: 210mm;   /* default A4 portrait */
+      --page-w: 210mm;   /* default A4 */
       --page-h: 297mm;
-
-      /* duplex & alignment */
       --duplex-rotate: 180deg;
       --back-offset-x: 0mm;
       --back-offset-y: 0mm;
-      --back-mirror: 1;           /* 1 = normal, -1 = mirrored */
-
-      /* print grid (2 x 4 = 8 per page) */
-      --grid-gap: 10mm;
+      --back-mirror: 1;
+      --header-h: 10mm;
+      --footer-h: 6mm;
     }
-
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
     body {
@@ -119,42 +113,58 @@
       position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,.18); background: #fff;
       display: grid;
-      grid-template-rows: 40px 1fr auto;  /* header | body | footer (leave as-is per user) */
+      grid-template-rows: var(--header-h) 1fr var(--footer-h);
       overflow: hidden; color: #333;
       outline: 2px solid transparent;
+      position: relative;
     }
+    .face > * { position: relative; z-index: 1; }
     .face:focus { outline: 2px solid var(--focus); outline-offset: 3px; }
     .back { transform: rotateY(180deg); }
 
-    /* WATERMARK */
-    .face { position: relative; }
-    .face > * { position: relative; z-index: 1; }
-    .face .wm{
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      pointer-events: none; z-index: 0; opacity: .06; transform: rotate(-25deg);
-      font-weight: 900; font-size: 22mm; letter-spacing: 2mm; color: var(--blue);
+    .watermark {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 0;
+      font-family: 'Great Vibes', cursive;
+      font-size: 20mm;
+      color: rgba(13, 47, 111, 0.08);
       mix-blend-mode: multiply;
+      transform: rotate(-45deg);
+      text-align: center;
+      line-height: 1;
     }
-    @media print { .face .wm{ opacity: .08; } }
 
     .id-card-header {
-      background: var(--blue); color: #fff; padding: 8px 14px; display: flex;
-      align-items: center; height: 40px; border-bottom: 3px solid var(--yellow); gap: 10px;
+      background: var(--blue); color: #fff; display:flex; align-items:center;
+      border-bottom: 3px solid var(--yellow);
+      grid-row: 1;
+      padding: 1.5mm 3mm;
+      min-height: var(--header-h);
     }
-
-    /* LOGO RING (no cropping) */
-    .logo-ring{
-      width: 10mm; aspect-ratio: 1/1; border-radius: 50%;
-      background: #fff; border: 0.8mm solid #fff; box-shadow: 0 0 0 0.6mm var(--yellow) inset;
-      display: grid; place-items: center; overflow: hidden; flex: 0 0 auto;
+    .logo-ring {
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      border-radius: 50%;
+      background: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px var(--yellow);
     }
-    .logo-ring img{
-      width: 86%; height: 86%; object-fit: contain; object-position: center;
+    .logo-ring img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
-
     .id-card-header h3 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: .3px; }
 
-    .body-front { display: flex; padding: 12px; gap: 12px; flex-grow: 1; align-items: flex-start; }
+    .body-front { display: flex; padding: 12px; gap: 12px; flex-grow: 1; align-items: flex-start; grid-row: 2; }
     .photo { width: 74px; height: 74px; border-radius: 8px; overflow: hidden; border: 2px solid var(--yellow); flex-shrink: 0; }
     .photo img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -162,17 +172,29 @@
     .details h4 { font-size: 13px; color: var(--blue); margin: 0 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; font-weight: 800; }
     .kv { font-size: 11px; margin: 3px 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
-
-    /* Long-name handling */
-    .kv-name .value{
+    .student-name {
+      white-space: normal !important;
+      overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
-      overflow: hidden;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      white-space: normal;  /* override .kv’s nowrap */
       line-height: 1.2;
+    }
+    .name-singleline{
+      white-space: nowrap !important;
+      display: inline-block;
+      max-width: calc(100% - 100px); /* leave space for the label */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: baseline;
+    }
+    .name-twoline{
+      white-space: normal !important;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-height: 1.2;
+      overflow: hidden;
     }
 
     .body-back{
@@ -185,32 +207,31 @@
       text-align: center;
       font-size: 3.2mm;
       line-height: 1.3;
-      margin: 0;
+      margin: 0;                                  /* keep compact */
     }
     .meta .title{ font-weight: 800; margin-bottom: 1mm; }
 
-    .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
+    .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; grid-row: 3; }
 
     .print-page { display: none; width: var(--page-w); height: var(--page-h); }
     .front-grid, .back-grid {
       position: absolute; top: 0; left: 0; width: var(--page-w); height: var(--page-h);
-      display: grid; gap: var(--grid-gap); justify-content: center; align-content: start;
+      display: grid; grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(4, 54mm);
+      gap: 3mm; justify-content: center; align-content: start;
     }
-    /* 2 columns, 4 rows = 8 per page */
-    .front-grid{ grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(4, 54mm); }
-    .back-grid {
-      grid-template-columns: repeat(2, 85.6mm);
-      grid-template-rows: repeat(4, 54mm);
+    .back-grid{
       transform-origin: center center;
       transform:
         translate(var(--back-offset-x), var(--back-offset-y))
         rotate(var(--duplex-rotate))
         scaleX(var(--back-mirror));
     }
-
     .id-card-wrapper { width: 85.6mm; height: 54mm; }
     .id-card-container { transform: none; }
-    .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
+    .print-page .face {
+      width: 85.6mm; height: 54mm;
+      box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc;
+    }
 
     @media print {
       @page { size: auto; margin: 0; }
@@ -240,7 +261,20 @@
       .footer {
         background-color: var(--red) !important;
         color:#fff !important;
+        font-size: 2mm;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        padding: 1mm 2mm;
       }
+      .logo-ring {
+        width: 8mm;
+        height: 8mm;
+        margin-right: 2mm;
+      }
+      .id-card-header h3 { font-size: 4mm; }
     }
 
     @media (max-width: 768px) {
@@ -322,6 +356,14 @@
 
           <div class="col-6">
             <div class="form-group">
+              <label for="dob">Date of Birth</label>
+              <input id="dob" type="date" required value="2005-01-01" aria-describedby="errDob" />
+              <div class="error-text" id="errDob" aria-live="assertive">Please enter a date of birth.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
               <label for="gender">Gender</label>
               <select id="gender" required aria-describedby="errGender">
                 <option value="Male">Male</option>
@@ -329,15 +371,6 @@
                 <option value="Other">Other</option>
               </select>
               <div class="error-text" id="errGender" aria-live="assertive">Please select a gender.</div>
-            </div>
-          </div>
-
-          <!-- NEW: Date of Birth -->
-          <div class="col-6">
-            <div class="form-group">
-              <label for="dob">Date of Birth</label>
-              <input id="dob" type="date" required aria-describedby="errDob" />
-              <div class="error-text" id="errDob" aria-live="assertive">Please pick a valid date.</div>
             </div>
           </div>
 
@@ -430,10 +463,12 @@
           <option value="short">Short-edge (no rotate)</option>
         </select>
       </label>
-      <!-- NEW: Mirror back toggle -->
+      <label for="mirrorBack" style="display: flex; align-items: center; font-size: 14px; color: #444;">
+        <input type="checkbox" id="mirrorBack"> Mirror back (fix reversed text)
+      </label>
       <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Mirror back (fix reversed text)
-        <input type="checkbox" id="mirrorBack">
+        <input type="checkbox" id="nameSingleLine" checked>
+        Keep name on one line
       </label>
     </div>
 
@@ -445,7 +480,7 @@
       <!-- Dynamically populated for printing -->
     </div>
 
-    <p class="notes" id="pageCount"></p>
+    <p class="notes" id="pageCount">Tip: Add students and use <b>Print Fronts</b> and <b>Print Backs</b> to print fronts and backs on the same A4 sheets (8 cards per sheet, 85.6 mm × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print again.</p>
   </div>
 
   <script>
@@ -455,7 +490,7 @@
         defaultLogo: '/glc-logo.jpg',
         captureScale: 2,
         debounceDelay: 300,
-        cardsPerPage: 8    // 2 × 4 grid
+        cardsPerPage: 8
       };
 
       // Elements
@@ -465,8 +500,8 @@
           name: document.getElementById('studentName'),
           adm: document.getElementById('admissionNo'),
           klass: document.getElementById('klass'),
+          dob: document.getElementById('dob'),
           gender: document.getElementById('gender'),
-          dob: document.getElementById('dob'), /* NEW */
           validForYears: document.getElementById('validForYears'),
           showGender: document.getElementById('showGender'),
           photoUrl: document.getElementById('photoUrl'),
@@ -480,8 +515,8 @@
           name: document.getElementById('errName'),
           adm: document.getElementById('errAdm'),
           klass: document.getElementById('errClass'),
+          dob: document.getElementById('errDob'),
           gender: document.getElementById('errGender'),
-          dob: document.getElementById('errDob'),       /* NEW */
           studentSelect: document.getElementById('errStudentSelect'),
           photo: document.getElementById('errPhoto')
         },
@@ -490,11 +525,14 @@
           printFrontsBtn: document.getElementById('printFrontsBtn'),
           printBacksBtn: document.getElementById('printBacksBtn'),
           imageMode: document.getElementById('imageMode'),
+          mirrorBack: document.getElementById('mirrorBack'),
+          nameSingleLine: document.getElementById('nameSingleLine'),
           resetBtn: document.getElementById('resetBtn'),
           addStudentBtn: document.getElementById('addStudentBtn'),
           removeStudentBtn: document.getElementById('removeStudentBtn'),
           duplexMode: document.getElementById('duplexMode'),
-          mirrorBack: document.getElementById('mirrorBack')
+          offsetX: document.getElementById('offsetX'),
+          offsetY: document.getElementById('offsetY')
         },
         idStage: document.getElementById('idStage'),
         printPages: document.getElementById('printPages'),
@@ -506,8 +544,8 @@
         name: 'ADEKUNLE SAMUEL',
         adm: 'GLC/2025/001',
         klass: 'SS1 A',
+        dob: '2005-01-01',
         gender: 'Male',
-        dob: '2009-01-15',         /* NEW default */
         validForYears: 1,
         valid: '2026-09-28',
         showGender: true,
@@ -523,7 +561,7 @@
       // Utilities
       const utils = {
         sanitize(str) {
-          return String(str ?? '').replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
+          return str.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
         },
         showErr(el, show, msg) {
           if (!el) return; // prevent crashes if a ref is missing
@@ -547,6 +585,13 @@
         }
       };
 
+      function formatDob(dobStr) {
+        if (!dobStr) return '—';
+        const d = new Date(dobStr);
+        if (isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+
       function computeValidDate(years) {
         const today = new Date();
         const valid = new Date(today);
@@ -554,24 +599,29 @@
         return valid.toISOString().split('T')[0];
       }
 
-      /* NEW: display DOB nicely */
-      function formatDate(d) {
-        if (!d) return '';
-        const dt = new Date(d);
-        if (isNaN(dt)) return d;
-        return new Intl.DateTimeFormat(undefined, { day:'2-digit', month:'short', year:'numeric' }).format(dt);
-      }
-
-      /* NEW: autoshrink long names to fit 2 lines */
-      function autoshrink(el, { min = 10, max = 13, step = 0.5, lines = 2 } = {}) {
-        if (!el) return;
+      function autoshrinkOneLine(el, { min=9, max=13, step=0.5 } = {}){
+        if(!el) return;
+        el.classList.add('name-singleline');
+        el.classList.remove('name-twoline');
         el.style.fontSize = max + 'px';
-        const cs = getComputedStyle(el);
-        const lineHeight = parseFloat(cs.lineHeight) || (max * 1.2);
-        const maxHeight = lineHeight * lines + 1;
-        while (el.scrollHeight > maxHeight && parseFloat(el.style.fontSize) > min) {
-          el.style.fontSize = (parseFloat(el.style.fontSize) - step) + 'px';
+        let guard = 60;
+        while (el.scrollWidth > el.clientWidth && guard--){
+          const cur = parseFloat(getComputedStyle(el).fontSize);
+          if (cur <= min) break;
+          el.style.fontSize = (cur - step) + 'px';
         }
+      }
+      function applyTwoLine(el){
+        if(!el) return;
+        el.classList.remove('name-singleline');
+        el.classList.add('name-twoline');
+        el.style.fontSize = '';
+      }
+      function applyNameFit(container){
+        const el = container.querySelector('.student-name');
+        const single = elements.tools.nameSingleLine?.checked;
+        if (single) autoshrinkOneLine(el, { min: 9, max: 13 });
+        else applyTwoLine(el);
       }
 
       // State Management
@@ -617,17 +667,19 @@
         },
         updateStudentSelect() {
           elements.fields.studentSelect.innerHTML = students.map((s, i) => 
-            `<option value="${i}">Student ${i + 1}${s.name ? `: ${utils.sanitize(s.name)}` : ''}</option>`
+            `<option value="${i}">Student ${i + 1}${s.name ? `: ${s.name}` : ''}</option>`
           ).join('');
           elements.fields.studentSelect.value = currentStudentIndex;
           elements.tools.removeStudentBtn.disabled = students.length <= 1;
         },
         updatePageCount() {
           const perPage = CONFIG.cardsPerPage;
+          const size = document.getElementById('paperSize').value;
           const pageCount = Math.ceil(students.length / perPage);
           elements.pageCount.textContent =
-            `Tip: ${students.length} card${students.length !== 1 ? 's' : ''} will print on ${pageCount} sheet${pageCount !== 1 ? 's' : ''} `
-            + `(${perPage} per sheet; card size 85.6 × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print backs.`;
+            `Tip: ${students.length} card${students.length !== 1 ? 's' : ''} will print on ${pageCount} ${size} sheet${pageCount !== 1 ? 's' : ''} `
+            + `(${perPage} cards per sheet, 85.6 mm × 54 mm, duplex: fronts on one side, backs on the other). `
+            + `For non-duplex printers, print fronts, flip the paper (long edge), and print again.`;
         }
       };
 
@@ -698,7 +750,12 @@
       const form = {
         validateField(field, errorEl, pattern = null) {
           const value = field.value.trim();
-          const isValid = pattern ? new RegExp(pattern).test(value) : !!value;
+          let isValid = !!value;
+          if (pattern) {
+            isValid = new RegExp(pattern).test(value);
+          } else if (field.type === 'date') {
+            isValid = !!value && !isNaN(new Date(value).getTime());
+          }
           utils.showErr(errorEl, !isValid);
           field.parentElement.classList.toggle('valid', isValid);
           field.parentElement.classList.toggle('invalid', !isValid);
@@ -709,8 +766,8 @@
             name: elements.fields.name.value,
             adm: elements.fields.adm.value,
             klass: elements.fields.klass.value,
+            dob: elements.fields.dob.value,
             gender: elements.fields.gender.value,
-            dob: elements.fields.dob.value, /* NEW */
             validForYears: parseInt(elements.fields.validForYears.value),
             showGender: elements.fields.showGender.checked,
             photo: students[currentStudentIndex]?.photo || CONFIG.defaultPhoto,
@@ -726,8 +783,8 @@
             this.validateField(elements.fields.name, elements.errors.name),
             this.validateField(elements.fields.adm, elements.errors.adm, elements.fields.adm.pattern),
             this.validateField(elements.fields.klass, elements.errors.klass),
-            this.validateField(elements.fields.gender, elements.errors.gender),
-            this.validateField(elements.fields.dob, elements.errors.dob)   /* NEW */
+            this.validateField(elements.fields.dob, elements.errors.dob),
+            this.validateField(elements.fields.gender, elements.errors.gender)
           ].every(Boolean);
 
           // Preview only the current student
@@ -741,9 +798,11 @@
             <div class="id-card-wrapper" aria-label="ID card preview">
               <div class="id-card-container" id="card-${currentStudentIndex}">
                 <section class="face front" tabindex="0" aria-label="Front of ID card" aria-hidden="false">
-                  <div class="wm">GREAT LANDMARK COLLEGE</div>
+                  <div class="watermark">GREAT LANDMARK COLLEGE</div>
                   <header class="id-card-header">
-                    <div class="logo-ring"><img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager"></div>
+                    <div class="logo-ring">
+                      <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    </div>
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-front">
@@ -752,10 +811,10 @@
                     </div>
                     <div class="details">
                       <h4>STUDENT IDENTITY CARD</h4>
-                      <p class="kv kv-name"><strong>Student Name:</strong> <span class="value student-name">${utils.sanitize(student.name) || '—'}</span></p>
+                      <p class="kv"><strong>Student Name:</strong> <span class="student-name">${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      <p class="kv"><strong>DOB:</strong> <span>${formatDate(student.dob) || '—'}</span></p>
+                      <p class="kv"><strong>DOB:</strong> <span>${formatDob(student.dob)}</span></p>
                       ${genderHtml}
                     </div>
                   </div>
@@ -764,15 +823,17 @@
                   </footer>
                 </section>
                 <section class="face back" tabindex="0" aria-label="Back of ID card" aria-hidden="true">
-                  <div class="wm">GREAT LANDMARK COLLEGE</div>
+                  <div class="watermark">GREAT LANDMARK COLLEGE</div>
                   <header class="id-card-header">
-                    <div class="logo-ring"><img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager"></div>
+                    <div class="logo-ring">
+                      <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    </div>
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
                     <div class="meta">
                       <div class="title">Valid Until: ${student.valid}</div>
-                      <div>Date of Birth: ${formatDate(student.dob) || '—'}</div>
+                      <div>Date of Birth: ${formatDob(student.dob)}</div>
                       <div>Address: ${utils.sanitize(student.address) || '—'}</div>
                       <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
@@ -787,9 +848,7 @@
             </div>
           `);
 
-          // Apply autoshrink for preview
-          const nameEl = document.querySelector(`#card-${currentStudentIndex} .student-name`);
-          autoshrink(nameEl, { min: 10, max: 13, step: 0.5, lines: 2 });
+          applyNameFit(elements.idStage);
 
           // Generate print pages
           elements.printPages.innerHTML = '';
@@ -814,9 +873,11 @@
               // Capture front
               tempContainer.innerHTML = `
                 <section class="face front">
-                  <div class="wm">GREAT LANDMARK COLLEGE</div>
+                  <div class="watermark">GREAT LANDMARK COLLEGE</div>
                   <header class="id-card-header">
-                    <div class="logo-ring"><img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager"></div>
+                    <div class="logo-ring">
+                      <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    </div>
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-front">
@@ -825,10 +886,10 @@
                     </div>
                     <div class="details">
                       <h4>STUDENT IDENTITY CARD</h4>
-                      <p class="kv kv-name"><strong>Student Name:</strong> <span class="value student-name">${utils.sanitize(student.name) || '—'}</span></p>
+                      <p class="kv"><strong>Student Name:</strong> <span class="student-name">${utils.sanitize(student.name) || '—'}</span></p>
                       <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                       <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                      <p class="kv"><strong>DOB:</strong> <span>${formatDate(student.dob) || '—'}</span></p>
+                      <p class="kv"><strong>DOB:</strong> <span>${formatDob(student.dob)}</span></p>
                       ${genderHtml}
                     </div>
                   </div>
@@ -837,9 +898,8 @@
                   </footer>
                 </section>
               `;
-              // autoshrink in image mode before capture
-              autoshrink(tempContainer.querySelector('.student-name'), { min: 10, max: 13, step: 0.5, lines: 2 });
-
+              applyNameFit(tempContainer);
+              await new Promise(r => setTimeout(r, 50));
               await document.fonts.ready;
               const frontUrl = await html2canvas(tempContainer.firstChild, {
                 scale: CONFIG.captureScale,
@@ -851,15 +911,17 @@
               // Capture back
               tempContainer.innerHTML = `
                 <section class="face back">
-                  <div class="wm">GREAT LANDMARK COLLEGE</div>
+                  <div class="watermark">GREAT LANDMARK COLLEGE</div>
                   <header class="id-card-header">
-                    <div class="logo-ring"><img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager"></div>
+                    <div class="logo-ring">
+                      <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    </div>
                     <h3>GREAT LANDMARK COLLEGE</h3>
                   </header>
                   <div class="body-back">
                     <div class="meta">
                       <div class="title">Valid Until: ${student.valid}</div>
-                      <div>Date of Birth: ${formatDate(student.dob) || '—'}</div>
+                      <div>Date of Birth: ${formatDob(student.dob)}</div>
                       <div>Address: ${utils.sanitize(student.address) || '—'}</div>
                       <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
                       <div>Email: ${utils.sanitize(student.email) || '—'}</div>
@@ -871,6 +933,7 @@
                   </footer>
                 </section>
               `;
+              await new Promise(r => setTimeout(r, 50));
               await document.fonts.ready;
               const backUrl = await html2canvas(tempContainer.firstChild, {
                 scale: CONFIG.captureScale,
@@ -897,19 +960,25 @@
               if (useImages) {
                 const {front, back} = dataUrls[globalIndex];
                 frontHtml += `
-                  <div class="id-card-wrapper"><img src="${front}" style="width:100%; height:100%; display:block;" /></div>
+                  <div class="id-card-wrapper">
+                    <img src="${front}" style="width:100%; height:100%; display:block;" />
+                  </div>
                 `;
                 backHtml += `
-                  <div class="id-card-wrapper"><img src="${back}" style="width:100%; height:100%; display:block;" /></div>
+                  <div class="id-card-wrapper">
+                    <img src="${back}" style="width:100%; height:100%; display:block;" />
+                  </div>
                 `;
               } else {
                 const frontCardHtml = `
                   <div class="id-card-wrapper" aria-hidden="true">
                     <div class="id-card-container">
                       <section class="face front">
-                        <div class="wm">GREAT LANDMARK COLLEGE</div>
+                        <div class="watermark">GREAT LANDMARK COLLEGE</div>
                         <header class="id-card-header">
-                          <div class="logo-ring"><img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager"></div>
+                          <div class="logo-ring">
+                            <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                          </div>
                           <h3>GREAT LANDMARK COLLEGE</h3>
                         </header>
                         <div class="body-front">
@@ -918,10 +987,10 @@
                           </div>
                           <div class="details">
                             <h4>STUDENT IDENTITY CARD</h4>
-                            <p class="kv kv-name"><strong>Student Name:</strong> <span class="value student-name">${utils.sanitize(student.name) || '—'}</span></p>
+                            <p class="kv"><strong>Student Name:</strong> <span class="student-name">${utils.sanitize(student.name) || '—'}</span></p>
                             <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
                             <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
-                            <p class="kv"><strong>DOB:</strong> <span>${formatDate(student.dob) || '—'}</span></p>
+                            <p class="kv"><strong>DOB:</strong> <span>${formatDob(student.dob)}</span></p>
                             ${genderHtml}
                           </div>
                         </div>
@@ -936,15 +1005,17 @@
                   <div class="id-card-wrapper" aria-hidden="true">
                     <div class="id-card-container">
                       <section class="face back">
-                        <div class="wm">GREAT LANDMARK COLLEGE</div>
+                        <div class="watermark">GREAT LANDMARK COLLEGE</div>
                         <header class="id-card-header">
-                          <div class="logo-ring"><img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager"></div>
+                          <div class="logo-ring">
+                            <img src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                          </div>
                           <h3>GREAT LANDMARK COLLEGE</h3>
                         </header>
                         <div class="body-back">
                           <div class="meta">
                             <div class="title">Valid Until: ${student.valid}</div>
-                            <div>Date of Birth: ${formatDate(student.dob) || '—'}</div>
+                            <div>Date of Birth: ${formatDob(student.dob)}</div>
                             <div>Address: ${utils.sanitize(student.address) || '—'}</div>
                             <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
                             <div>Email: ${utils.sanitize(student.email) || '—'}</div>
@@ -965,6 +1036,10 @@
             frontHtml += '</div>';
             backHtml += '</div>';
             elements.printPages.insertAdjacentHTML('beforeend', `<div class="print-page">${frontHtml}${backHtml}</div>`);
+          }
+
+          if (!useImages) {
+            Array.from(elements.printPages.querySelectorAll('.front-grid')).forEach(applyNameFit);
           }
 
           cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || { frontCache: null, backCache: null };
@@ -1046,6 +1121,9 @@
       // Event Handlers
       const events = {
         init() {
+          const savedMode = localStorage.getItem('glc_id_name_mode'); // 'single' | 'wrap'
+          if (savedMode) elements.tools.nameSingleLine.checked = (savedMode === 'single');
+
           elements.form.addEventListener('input', (e) => {
             clearTimeout(debounceTimer);
             if (e.target === elements.fields.photoUrl) {
@@ -1112,9 +1190,13 @@
             document.documentElement.style.setProperty('--duplex-rotate', e.target.value === 'long' ? '180deg' : '0deg');
           });
 
-          /* NEW: mirror back */
-          elements.tools.mirrorBack.addEventListener('change', (e)=>{
+          elements.tools.mirrorBack.addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--back-mirror', e.target.checked ? '-1' : '1');
+          });
+
+          elements.tools.nameSingleLine.addEventListener('change', (e)=>{
+            localStorage.setItem('glc_id_name_mode', e.target.checked ? 'single' : 'wrap');
+            form.updatePreview();
           });
 
           elements.tools.resetBtn.addEventListener('click', () => {
@@ -1124,7 +1206,7 @@
 
           elements.tools.addStudentBtn.addEventListener('click', () => {
             students.push({
-              name: '', adm: '', klass: '', gender: 'Male', dob: '', validForYears: 1, valid: computeValidDate(1),
+              name: '', adm: '', klass: '', dob: '', gender: 'Male', validForYears: 1, valid: computeValidDate(1),
               showGender: true,
               photo: CONFIG.defaultPhoto, phone: '', email: '', address: ''
             });
