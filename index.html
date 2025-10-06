@@ -4,12 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ID Card Generator — Great Landmark College</title>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-
   <style>
     :root{
       --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c; --bg:#f4f7f6; --ink:#15202b;
@@ -112,10 +110,10 @@
 
     /* printing layout */
     .print-page{display:none;width:var(--page-w);height:var(--page-h);position:relative}
-    .grid-surface{position:absolute;inset:0;display:grid;justify-content:center;align-content:start}
+    .grid-surface{display:grid;justify-content:center;align-content:start;margin:0 auto}
     .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
     .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
-    .back-surface{transform:rotate(var(--duplex-rotate))}
+    .back-surface{transform:rotate(var(--duplex-rotate));transform-origin:center center}
 
     .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
     .loading.active{display:flex;gap:8px}
@@ -160,157 +158,156 @@
 <body>
   <div class="container" aria-live="polite">
     <h1>Great Landmark College ID Card Generator</h1>
-
-    <!-- FORM -->
-    <div class="form-section">
-      <h2>Enter Student Details</h2>
-      <div class="student-controls">
-        <div class="form-group">
-          <label for="studentSelect">Select Student</label>
-          <select id="studentSelect"></select>
-        </div>
-        <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
-        <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove Selected</button>
-      </div>
-
-      <form id="form" novalidate>
-        <div class="grid">
-          <div class="col-6">
-            <div class="form-group">
-              <label for="studentName">Student Name</label>
-              <input id="studentName" type="text" required value="ADEKUNLE SAMUEL"/>
-              <div class="error-text" id="errName">Please enter a name.</div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="dob">Date of Birth (DOB)</label>
-              <input id="dob" type="date" required/>
-              <div class="error-text" id="errDob">Please enter a valid date.</div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="admissionNo">Admission No</label>
-              <input id="admissionNo" type="text" required placeholder="GLC/2025/001" pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
-              <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="klass">Class</label>
-              <input id="klass" type="text" required value="SS1 A"/>
-              <div class="error-text" id="errClass">Please enter a class.</div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="gender">Gender</label>
-              <select id="gender" required>
-                <option>Male</option><option>Female</option><option>Other</option>
-              </select>
-              <div class="error-text" id="errGender">Please select a gender.</div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="validForYears">Valid For</label>
-              <select id="validForYears">
-                <option value="1" selected>1 year</option>
-                <option value="2">2 years</option>
-                <option value="3">3 years</option>
-                <option value="4">4 years</option>
-                <option value="5">5 years</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <label><input type="checkbox" id="showGender" checked> Show Gender on card</label>
-          </div>
-
-          <div class="col-12">
-            <div class="form-group">
-              <label for="photoUrl">Student Photo URL</label>
-              <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg" value="https://via.placeholder.com/300x300?text=Student"/>
-              <div class="row">
-                <input id="photoFile" type="file" accept="image/*,image/heic,image/heif"/>
-                <span class="help-text">Upload overrides URL. Auto-cropped & compressed.</span>
-              </div>
-              <div class="error-text" id="errPhoto"></div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="phone">Phone</label>
-              <input id="phone" type="text" value="+234 801 123 4567"/>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input id="email" type="email" value="info@greatlandmarkcollege.org"/>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="form-group">
-              <label for="address">Address</label>
-              <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure"/>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="row">
-              <button class="btn" type="submit">Update Preview</button>
-              <button class="btn secondary" type="button" id="resetBtn">Reset</button>
-            </div>
-          </div>
-        </div>
-      </form>
-
-      <div class="loading">Processing…</div>
+  <!-- FORM -->
+<div class="form-section">
+  <h2>Enter Student Details</h2>
+  <div class="student-controls">
+    <div class="form-group">
+      <label for="studentSelect">Select Student</label>
+      <select id="studentSelect"></select>
     </div>
-
-    <!-- OUTPUT -->
-    <h2>Generated ID Card (Current Student)</h2>
-    <div class="tools">
-      <button class="btn secondary" id="flipBtn" type="button">Flip</button>
-      <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
-      <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
-
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Paper
-        <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
-      </label>
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Duplex
-        <select id="duplexMode"><option value="long" selected>Long-edge</option><option value="short">Short-edge</option></select>
-      </label>
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Cards / sheet
-        <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
-      </label>
-      <label style="display:flex;align-items:center;font-size:14px;color:#444">
-        <input type="checkbox" id="imageMode"> Render as images (for tricky printers)
-      </label>
-    </div>
-
-    <div class="id-stage" id="idStage"></div>
-    <div id="printPages" aria-hidden="true"></div>
-    <p class="notes" id="pageNote">Tip: Choose 4 or 8 cards per sheet. For duplex, print fronts then backs (long edge).</p>
+    <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
+    <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove Selected</button>
   </div>
 
+  <form id="form" novalidate>
+    <div class="grid">
+      <div class="col-6">
+        <div class="form-group">
+          <label for="studentName">Student Name</label>
+          <input id="studentName" type="text" required value="ADEKUNLE SAMUEL"/>
+          <div class="error-text" id="errName">Please enter a name.</div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="dob">Date of Birth (DOB)</label>
+          <input id="dob" type="date" required/>
+          <div class="error-text" id="errDob">Please enter a valid date.</div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="admissionNo">Admission No</label>
+          <input id="admissionNo" type="text" required placeholder="GLC/2025/001" pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
+          <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="klass">Class</label>
+          <input id="klass" type="text" required value="SS1 A"/>
+          <div class="error-text" id="errClass">Please enter a class.</div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select id="gender" required>
+            <option>Male</option><option>Female</option><option>Other</option>
+          </select>
+          <div class="error-text" id="errGender">Please select a gender.</div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="validForYears">Valid For</label>
+          <select id="validForYears">
+            <option value="1" selected>1 year</option>
+            <option value="2">2 years</option>
+            <option value="3">3 years</option>
+            <option value="4">4 years</option>
+            <option value="5">5 years</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label><input type="checkbox" id="showGender" checked> Show Gender on card</label>
+      </div>
+
+      <div class="col-12">
+        <div class="form-group">
+          <label for="photoUrl">Student Photo URL</label>
+          <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg" value="https://via.placeholder.com/300x300?text=Student"/>
+          <div class="row">
+            <input id="photoFile" type="file" accept="image/*,image/heic,image/heif"/>
+            <span class="help-text">Upload overrides URL. Auto-cropped & compressed.</span>
+          </div>
+          <div class="error-text" id="errPhoto"></div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input id="phone" type="text" value="+234 801 123 4567"/>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" value="info@greatlandmarkcollege.org"/>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="form-group">
+          <label for="address">Address</label>
+          <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure"/>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="row">
+          <button class="btn" type="submit">Update Preview</button>
+          <button class="btn secondary" type="button" id="resetBtn">Reset</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="loading">Processing…</div>
+</div>
+
+<!-- OUTPUT -->
+<h2>Generated ID Card (Current Student)</h2>
+<div class="tools">
+  <button class="btn secondary" id="flipBtn" type="button">Flip</button>
+  <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
+  <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
+
+  <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+    Paper
+    <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
+  </label>
+  <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+    Duplex
+    <select id="duplexMode"><option value="long" selected>Long-edge</option><option value="short">Short-edge</option></select>
+  </label>
+  <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+    Cards / sheet
+    <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
+  </label>
+  <label style="display:flex;align-items:center;font-size:14px;color:#444">
+    <input type="checkbox" id="imageMode"> Render as images (for tricky printers)
+  </label>
+</div>
+
+<div class="id-stage" id="idStage"></div>
+<div id="printPages" aria-hidden="true"></div>
+<p class="notes" id="pageNote">Tip: Choose 4 or 8 cards per sheet. For duplex, print fronts then backs (long edge).</p>
+
+  </div>
   <script>
   (function(){
-    const CONFIG={ defaultPhoto:'https://via.placeholder.com/300x300?text=Student', defaultLogo:'/glc-logo.jpg', captureScale:2 };
+    const CONFIG={ defaultPhoto:'https://via.placeholder.com/300x300?text=Student', defaultLogo:'https://via.placeholder.com/100x100/0d2f6f/ffffff?text=GLC', captureScale:2 };
 
     const els={
       form:document.getElementById('form'),
@@ -355,7 +352,7 @@
     };
 
     let students=[{
-      name:'ADEKUNLE SAMUEL', dob:'', adm:'GLC/2025/001', klass:'SS1 A', gender:'Male', showGender:true,
+      name:'ADEKUNLE SAMUEL', dob:'2005-01-01', adm:'GLC/2025/001', klass:'SS1 A', gender:'Male', showGender:true,
       validForYears:1, validUntil:futureDate(1), photo:CONFIG.defaultPhoto,
       phone:'+234 801 123 4567', email:'info@greatlandmarkcollege.org', address:'45, Oke Alaro Rd, Abusoro, Akure'
     }];
