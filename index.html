@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,270 +7,232 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ID Card Generator — Great Landmark College</title>
 
-  <!-- libs & fonts -->
+  <!-- html2canvas (CDNs) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      /* tuned to match the mock exactly */
-      --blue:  #123a7b;   /* deeper navy */
-      --yellow:#f6b60a;   /* richer gold stripe */
-      --red:   #d64545;   /* warmer footer */
-      --bg:#f4f7f6;
-      --ink:#333;
+    :root {
+      --blue: #0d2f6f;
+      --yellow: #f9a825;
+      --red: #e54c4c;
+      --bg: #f4f7f6;
+      --ink: #333;
       --border-radius: 10px;
       --padding-sm: 16px;
       --shadow: 0 4px 12px rgba(0,0,0,.1);
       --focus: #5b9dd9;
-
       --page-w: 210mm;   /* default A4 */
       --page-h: 297mm;
-
       --duplex-rotate: 180deg;
       --back-offset-x: 0mm;
       --back-offset-y: 0mm;
-      --back-mirror: 1;
-
-      --header-h: 12mm;  /* slightly taller like the mock */
-      --footer-h: 6mm;
     }
-
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
-    body{
+    body {
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
-      background: var(--bg);
-      padding: 16px;
-      display: flex; flex-direction: column; align-items: center; color: var(--ink);
+      background: var(--bg); padding: 16px; display: flex; flex-direction: column; align-items: center; color: var(--ink);
     }
 
-    .container{
-      background:#fff; padding:20px; border-radius:var(--border-radius); box-shadow:var(--shadow);
-      max-width:960px; width:100%; margin-bottom:20px;
+    .container {
+      background: #fff; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow);
+      max-width: 960px; width: 100%; margin-bottom: 20px;
     }
-    h1{ text-align:center; color:var(--blue); margin:0 0 16px; font-size:26px; font-weight:700; }
-    h2{ color:var(--blue); border-bottom:2px solid #eee; padding-bottom:8px; margin:16px 0; font-size:20px; }
+    h1 { text-align: center; color: var(--blue); margin: 0 0 16px; font-size: 26px; font-weight: 700; }
+    h2 { color: var(--blue); border-bottom: 2px solid #eee; padding-bottom: 8px; margin: 16px 0; font-size: 20px; }
 
     /* Form */
-    .grid{ display:grid; grid-template-columns: repeat(12,1fr); gap:12px; }
-    .col-6{ grid-column: span 6; }
-    .col-12{ grid-column: span 12; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .col-6 { grid-column: span 6; }
+    .col-12 { grid-column: span 12; }
 
-    .form-group{ position:relative; display:flex; flex-direction:column; gap:6px; }
-    .form-group label{ font-weight:600; color:#444; font-size:14px; }
+    .form-group { position: relative; display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-weight: 600; color: #444; font-size: 14px; }
     .form-group input[type="text"],
     .form-group input[type="date"],
     .form-group input[type="url"],
     .form-group input[type="email"],
-    .form-group select{
-      padding: var(--padding-sm); border:1px solid #ddd; border-radius:var(--border-radius);
-      font-size:16px; background:#fff; transition: border-color .2s ease;
+    .form-group select {
+      padding: var(--padding-sm); border: 1px solid #ddd; border-radius: var(--border-radius);
+      font-size: 16px; background: #fff; transition: border-color 0.2s ease;
     }
-    .form-group input:focus, .form-group select:focus{ outline:2px solid var(--focus); border-color:var(--focus); }
-    .form-group.valid::after{ content:'✔'; position:absolute; right:12px; top:36px; color:#2ecc71; font-size:16px; }
-    .form-group.invalid::after{ content:'✘'; position:absolute; right:12px; top:36px; color:#b00020; font-size:16px; }
-    .form-group.valid input, .form-group.valid select{ border-color:#2ecc71; }
-    .form-group.invalid input, .form-group.invalid select{ border-color:#b00020; }
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .help-text{ font-size:12px; color:#777; }
-    .error-text{ font-size:12px; color:#b00020; display:none; margin-top:4px; }
+    .form-group input:focus,
+    .form-group select:focus { outline: 2px solid var(--focus); border-color: var(--focus); }
+    .form-group.valid::after {
+      content: '✔'; position: absolute; right: 12px; top: 36px; color: #2ecc71; font-size: 16px;
+    }
+    .form-group.invalid::after {
+      content: '✘'; position: absolute; right: 12px; top: 36px; color: #b00020; font-size: 16px;
+    }
+    .form-group.valid input, .form-group.valid select { border-color: #2ecc71; }
+    .form-group.invalid input, .form-group.invalid select { border-color: #b00020; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .help-text { font-size: 12px; color: #777; }
+    .error-text { font-size: 12px; color: #b00020; display: none; margin-top: 4px; }
+    .loading {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 1000; font-size: 16px;
+    }
+    .loading.active { display: flex; align-items: center; gap: 8px; }
+    .loading::before { content: '⏳'; }
 
-    .loading{
-      display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-      background:rgba(0,0,0,.8); color:#fff; padding:12px 24px; border-radius:8px; z-index:1000; font-size:16px;
+    .btn {
+      background: var(--blue); color: #fff; padding: 14px 20px; border: 0; border-radius: var(--border-radius);
+      cursor: pointer; font-size: 16px; font-weight: 600; transition: transform 0.1s ease, background 0.2s ease;
+      min-height: 48px; touch-action: manipulation;
     }
-    .loading.active{ display:flex; align-items:center; gap:8px; }
-    .loading::before{ content:'⏳'; }
-
-    .btn{
-      background:var(--blue); color:#fff; padding:14px 20px; border:0; border-radius:var(--border-radius);
-      cursor:pointer; font-size:16px; font-weight:600; transition: transform .1s ease, background .2s ease;
-      min-height:48px; touch-action:manipulation;
-    }
-    .btn:hover{ background:#1e3a8a; transform:scale(1.02); }
-    .btn:active{ transform:scale(.98); }
-    .btn.secondary{ background:#eef2ff; color:#1e2a78; border:1px solid #dfe3ff; }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+    .btn:hover { background: #1e3a8a; transform: scale(1.02); }
+    .btn:active { transform: scale(0.98); }
+    .btn.secondary { background: #eef2ff; color: #1e2a78; border: 1px solid #dfe3ff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Student Controls */
-    .student-controls{ display:flex; flex-direction:row; gap:10px; align-items:center; margin-bottom:16px; }
-    .student-controls select{ flex:1; }
+    .student-controls { display: flex; flex-direction: row; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .student-controls select { flex: 1; }
 
     /* Card area */
-    .tools{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:12px 0; }
+    .tools { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
 
-    .id-stage{ display:flex; gap:18px; justify-content:center; flex-wrap:wrap; }
-    .id-card-wrapper{
-      width:350px; aspect-ratio:85.6 / 54; position:relative;
-      perspective:1000px; margin:12px auto 0; transition:transform .3s ease;
+    .id-stage { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+    .id-card-wrapper {
+      width: 350px; aspect-ratio: 85.6 / 54; position: relative;
+      perspective: 1000px; margin: 12px auto 0; transition: transform 0.3s ease;
     }
-    .id-card-container{
-      position:absolute; inset:0; transform-style:preserve-3d;
-      transition: transform .7s cubic-bezier(.68,-.55,.27,1.55), scale .2s ease;
+    .id-card-container {
+      position: absolute; inset: 0; transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55), scale 0.2s ease;
     }
-    .id-card-container:hover{ scale:1.02; }
-    .id-card-container.flipped{ transform: rotateY(180deg); }
+    .id-card-container:hover { scale: 1.02; }
+    .id-card-container.flipped { transform: rotateY(180deg); }
 
-    .face{
-      position:absolute; inset:0; backface-visibility:hidden; border-radius:12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,.18); background:#fff;
-      display:grid; grid-template-rows: var(--header-h) 1fr var(--footer-h);
-      overflow:hidden; color:#333; outline:2px solid transparent; position:relative;
+    .face {
+      position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.18); background: #fff;
+      display: grid;
+      grid-template-rows: 40px 1fr auto;  /* header | body | footer */
+      overflow: hidden; color: #333;
+      outline: 2px solid transparent;
     }
-    .face>*{ position:relative; z-index:1; }
-    .face:focus{ outline:2px solid var(--focus); outline-offset:3px; }
-    .back{ transform:rotateY(180deg); }
+    .face:focus { outline: 2px solid var(--focus); outline-offset: 3px; }
+    .back { transform: rotateY(180deg); }
 
-    .watermark{
-      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-      pointer-events:none; z-index:0; font-family:'Great Vibes', cursive;
-      font-size:19mm; color: rgba(18,58,123,0.06);
-      mix-blend-mode:multiply; transform:rotate(-45deg); text-align:center; line-height:1;
+    .id-card-header {
+      background: var(--blue); color: #fff; padding: 8px 14px; display: flex;
+      align-items: center; height: 40px; border-bottom: 3px solid var(--yellow);
     }
+    .logo { height: 28px; width: 28px; margin-right: 10px; background: #fff; border-radius: 50%; object-fit: cover; }
+    .id-card-header img {
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 10px;
+      background: #fff;
+    }
+    .id-card-header h3 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: .3px; }
 
-    .id-card-header{
-      background:var(--blue); color:#fff; display:flex; align-items:center;
-      border-bottom:2px solid var(--yellow);
-      grid-row:1; padding:1.5mm 3mm; min-height:var(--header-h);
-    }
-    /* Perfect circular logo via SVG; size adjusts for screen/print below */
-    .logo-ring{ width:28px; height:28px; margin-right:10px; display:inline-block; }
-    .logo-ring svg{ width:100%; height:100%; display:block; }
+    .body-front { display: flex; padding: 12px; gap: 12px; flex-grow: 1; align-items: flex-start; }
+    .photo { width: 74px; height: 74px; border-radius: 8px; overflow: hidden; border: 2px solid var(--yellow); flex-shrink: 0; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
 
-    .id-card-header h3{
-      margin:0;
-      font-weight:800;
-      letter-spacing:.5px;
-      text-transform:uppercase;
-      font-family: Montserrat, Inter, system-ui, sans-serif;
-      font-size:15px;
-    }
+    .details { flex: 1; min-width: 0; }
+    .details h4 { font-size: 13px; color: var(--blue); margin: 0 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; font-weight: 800; }
+    .kv { font-size: 11px; margin: 3px 0; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kv strong { color: var(--blue); display: inline-block; min-width: 90px; }
 
-    .body-front{ display:flex; padding:12px; gap:12px; flex-grow:1; align-items:flex-start; grid-row:2; }
-    .photo{
-      width:74px; height:74px; border-radius:8px; overflow:hidden; background:#fff;
-      /* white spacer + gold ring to match mock */
-      box-shadow:
-        0 0 0 2px #fff,
-        0 0 0 3.5px var(--yellow);
-      border:none; flex-shrink:0;
+    .body-back{
+      grid-row: 2;
+      padding: 6mm 6mm 5mm;
+      overflow: hidden;
+      text-align: center;
     }
-    .photo img{ width:100%; height:100%; object-fit:cover; }
+    .meta{
+      text-align: center;
+      font-size: 3.2mm;
+      line-height: 1.3;
+      margin: 0;                                  /* keep compact */
+    }
+    .meta .title{ font-weight: 800; margin-bottom: 1mm; }
 
-    .details{ flex:1; min-width:0; }
-    .details h4{
-      font-family: Montserrat, Inter, system-ui, sans-serif;
-      font-size:13px; color:var(--blue); margin:0 0 6px; border-bottom:1px solid #eee; padding-bottom:4px;
-      font-weight:800; text-transform:uppercase; letter-spacing:.3px;
-    }
+    .footer { background: var(--red); color: #fff; font-size: 9px; padding: 6px 10px; text-align: center; font-weight: 700; }
 
-    .kv{ font-size:11px; margin:3px 0; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .kv strong{ color:#111; display:inline-block; min-width:90px; font-weight:700; }
-    .kv .val{ font-weight:800; }                 /* values pop */
-    .kv .val--adm, .kv .val--blue{ color:var(--blue); }
+    .print-page { display: none; width: var(--page-w); height: var(--page-h); }
+    .front-grid, .back-grid {
+      position: absolute; top: 0; left: 0; width: var(--page-w); height: var(--page-h);
+      display: grid; grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(2, 54mm);
+      gap: 10mm; justify-content: center; align-content: start;
+    }
+    .back-grid { transform: translate(var(--back-offset-x), var(--back-offset-y)) rotate(var(--duplex-rotate)); } /* Align backs for duplex */
+    .id-card-wrapper { width: 85.6mm; height: 54mm; }
+    .id-card-container { transform: none; }
+    .face { width: 85.6mm; height: 54mm; box-shadow: none; border-radius: 2mm; border: 1px dashed #ccc; }
 
-    .student-name{
-      white-space:normal !important;
-      overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.2;
-    }
-    .name-singleline{
-      white-space:nowrap !important; display:inline-block; max-width:calc(100% - 100px);
-      overflow:hidden; text-overflow:ellipsis; vertical-align:baseline;
-    }
-    .name-twoline{
-      white-space:normal !important; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-height:1.2; overflow:hidden;
-    }
+    @media print {
+      @page { size: auto; margin: 0; }
 
-    .body-back{ grid-row:2; padding:6mm 6mm 5mm; overflow:hidden; text-align:center; }
-    .meta{ text-align:center; font-size:3.2mm; line-height:1.3; margin:0; }
-    .meta .title{ font-weight:800; margin-bottom:1mm; }
-
-    .footer{
-      background:var(--red); color:#fff; font-size:9px; padding:6px 10px; text-align:center; font-weight:700; grid-row:3;
-      border-bottom-left-radius:12px; border-bottom-right-radius:12px;
-      display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; line-height:1.25;
-    }
-
-    .print-page{ display:none; width:var(--page-w); height:var(--page-h); }
-    .front-grid, .back-grid{
-      position:absolute; top:0; left:0; width:var(--page-w); height:var(--page-h);
-      display:grid; grid-template-columns: repeat(2, 85.6mm); grid-template-rows: repeat(4, 54mm);
-      gap:3mm; justify-content:center; align-content:start;
-    }
-    .back-grid{
-      transform-origin:center center;
-      transform: translate(var(--back-offset-x), var(--back-offset-y)) rotate(var(--duplex-rotate)) scaleX(var(--back-mirror));
-    }
-
-    .id-card-wrapper{ width:85.6mm; height:54mm; }
-    .id-card-container{ transform:none; }
-    .print-page .face{
-      width:85.6mm; height:54mm;
-      box-shadow:none; border-radius:2mm;
-      border:none;                 /* IMPORTANT: no dashed cut-lines in print */
-    }
-
-    @media print{
-      @page{ size:auto; margin:0; }
-      html, body, *{
+      html, body, * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         forced-color-adjust: none !important;
       }
-      body{ background:#fff; padding:0; margin:0; }
-      .container{ box-shadow:none; padding:0; }
-      .id-stage, .tools, .form-section, .notes, .loading{ display:none !important; }
-      h1, h2{ display:none !important; }
 
-      .print-page{ display:block; position:relative; width:var(--page-w); height:var(--page-h); page-break-after:always; }
-      .front-grid{ display:grid; }
-      .back-grid{ display:none; }
-      .print-page.print-back .front-grid{ display:none; }
-      .print-page.print-back .back-grid{ display:grid; }
+      body { background:#fff; padding:0; margin:0; }
+      .container { box-shadow:none; padding:0; }
+      .id-stage, .tools, .form-section, .notes, .loading { display:none !important; }
+      h1, h2 { display:none !important; }
 
-      .id-card-header{ background-color:var(--blue) !important; color:#fff !important; border-bottom-color:var(--yellow) !important; }
-      .footer{
-        background-color:var(--red) !important; color:#fff !important;
-        font-size:2mm; line-height:1.2; padding:1mm 2mm;
-        border-bottom-left-radius:2mm; border-bottom-right-radius:2mm;
+      .print-page { display:block; position:relative; width:var(--page-w); height:var(--page-h); page-break-after:always; }
+      .front-grid { display:grid; }
+      .back-grid  { display:none; }
+      .print-page.print-back .front-grid { display:none; }
+      .print-page.print-back .back-grid  { display:grid; }
+
+      .id-card-header {
+        background-color: var(--blue) !important;
+        color:#fff !important;
+        border-bottom-color: var(--yellow) !important;
       }
-      .logo-ring{ width:8mm; height:8mm; margin-right:2mm; }
-      .id-card-header h3{ font-size:4mm; }
+      .footer {
+        background-color: var(--red) !important;
+        color:#fff !important;
+      }
     }
 
-    @media (max-width: 768px){
-      body{ padding:12px; }
-      .container{ padding:16px; box-shadow:var(--shadow); }
-      h1{ font-size:24px; } h2{ font-size:18px; }
-      .grid{ grid-template-columns:1fr; gap:10px; }
-      .col-6, .col-12{ grid-column:span 1; }
-      .student-controls{ flex-direction:column; gap:8px; }
-      .tools{ flex-direction:column; }
-      .btn{ width:100%; min-height:50px; font-size:16px; }
-      .id-card-wrapper{ width:90%; max-width:320px; margin:10px auto; }
-      .id-stage{ justify-content:center; }
-      .notes{ font-size:13px; text-align:left; }
-      .error-text, .help-text, .form-group label{ font-size:13px; }
-      .form-group input, .form-group select{ font-size:16px; padding:14px; }
-      .id-card-header h3{ font-size:14px; }
-      .kv{ font-size:10px; }
-      .footer{ font-size:8px; }
-      .meta{ font-size:10px; }
-    }
-    @media (max-width:480px){
-      .id-card-wrapper{ width:100%; }
-      .kv strong{ min-width:80px; }
-      .photo{ width:60px; height:60px; }
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .container { padding: 16px; box-shadow: var(--shadow); }
+      h1 { font-size: 24px; }
+      h2 { font-size: 18px; }
+      .grid { grid-template-columns: 1fr; gap: 10px; }
+      .col-6, .col-12 { grid-column: span 1; }
+      .student-controls { flex-direction: column; gap: 8px; }
+      .tools { flex-direction: column; }
+      .btn { width: 100%; min-height: 50px; font-size: 16px; }
+      .id-card-wrapper { width: 90%; max-width: 320px; margin: 10px auto; }
+      .id-stage { justify-content: center; }
+      .notes { font-size: 13px; text-align: left; }
+      .error-text { font-size: 13px; }
+      .help-text { font-size: 13px; }
+      .form-group label { font-size: 14px; }
+      .form-group input, .form-group select { font-size: 16px; padding: 14px; }
+      .id-card-header h3 { font-size: 14px; }
+      .kv { font-size: 10px; }
+      .footer { font-size: 8px; }
+      .meta { font-size: 10px; }
     }
 
-    .notes{ font-size:12px; color:#666; text-align:center; margin-top:8px; }
+    @media (max-width: 480px) {
+      .id-card-wrapper { width: 100%; }
+      .kv strong { min-width: 80px; }
+      .photo { width: 60px; height: 60px; }
+    }
+
+    .notes { font-size: 12px; color: #666; text-align: center; margin-top: 8px; }
   </style>
 </head>
-
 <body>
   <div class="container" aria-live="polite">
     <h1>Great Landmark College ID Card Generator</h1>
@@ -287,7 +251,6 @@
         <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
         <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove Selected</button>
       </div>
-
       <form id="form" novalidate>
         <div class="grid">
           <div class="col-6">
@@ -312,14 +275,6 @@
               <label for="klass">Class</label>
               <input id="klass" type="text" required value="SS1 A" aria-describedby="errClass" />
               <div class="error-text" id="errClass" aria-live="assertive">Please enter a class.</div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="form-group">
-              <label for="dob">Date of Birth</label>
-              <input id="dob" type="date" required value="2005-01-01" aria-describedby="errDob" />
-              <div class="error-text" id="errDob" aria-live="assertive">Please enter a date of birth.</div>
             </div>
           </div>
 
@@ -407,7 +362,7 @@
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
       <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
       <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
-      <label for="imageMode" style="display:flex;align-items:center;font-size:14px;color:#444;">
+      <label for="imageMode" style="display: flex; align-items: center; font-size: 14px; color: #444;">
         <input type="checkbox" id="imageMode"> Render as images (fixes missing colors on some printers)
       </label>
       <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
@@ -424,22 +379,17 @@
           <option value="short">Short-edge (no rotate)</option>
         </select>
       </label>
-      <label for="mirrorBack" style="display:flex;align-items:center;font-size:14px;color:#444;">
-        <input type="checkbox" id="mirrorBack"> Mirror back (fix reversed text)
-      </label>
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        <input type="checkbox" id="nameSingleLine" checked>
-        Keep name on one line
-      </label>
     </div>
 
-    <div class="id-stage" id="idStage"></div>
-    <div id="printPages" aria-hidden="true"></div>
+    <div class="id-stage" id="idStage">
+      <!-- Single card preview -->
+    </div>
 
-    <p class="notes" id="pageCount">
-      Tip: Add students and use <b>Print Fronts</b> and <b>Print Backs</b> to print fronts and backs on the same A4 sheets
-      (8 cards per sheet, 85.6 mm × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print again.
-    </p>
+    <div id="printPages" aria-hidden="true">
+      <!-- Dynamically populated for printing -->
+    </div>
+
+    <p class="notes" id="pageCount">Tip: Add students and use <b>Print Fronts</b> and <b>Print Backs</b> to print fronts and backs on the same A4 sheets (4 cards per sheet, 85.6 mm × 54 mm). For non-duplex printers, print fronts, flip the paper (long edge), and print again.</p>
   </div>
 
   <script>
@@ -449,22 +399,8 @@
         defaultLogo: '/glc-logo.jpg',
         captureScale: 2,
         debounceDelay: 300,
-        cardsPerPage: 8
+        cardsPerPage: 4
       };
-
-      // reusable: exact same SVG for preview, print DOM, and image capture
-      const logoSVG = () => `
-        <div class="logo-ring" aria-hidden="true">
-          <svg viewBox="0 0 100 100">
-            <defs>
-              <clipPath id="glcLogoClip"><circle cx="50" cy="50" r="46"/></clipPath>
-            </defs>
-            <circle cx="50" cy="50" r="50" fill="#ffffff"></circle>
-            <image href="${CONFIG.defaultLogo}" x="4" y="4" width="92" height="92"
-                   clip-path="url(#glcLogoClip)" preserveAspectRatio="xMidYMid meet" crossorigin="anonymous"></image>
-            <circle cx="50" cy="50" r="49" fill="none" stroke="var(--yellow)" stroke-width="3"></circle>
-          </svg>
-        </div>`;
 
       // Elements
       const elements = {
@@ -473,7 +409,6 @@
           name: document.getElementById('studentName'),
           adm: document.getElementById('admissionNo'),
           klass: document.getElementById('klass'),
-          dob: document.getElementById('dob'),
           gender: document.getElementById('gender'),
           validForYears: document.getElementById('validForYears'),
           showGender: document.getElementById('showGender'),
@@ -488,7 +423,6 @@
           name: document.getElementById('errName'),
           adm: document.getElementById('errAdm'),
           klass: document.getElementById('errClass'),
-          dob: document.getElementById('errDob'),
           gender: document.getElementById('errGender'),
           studentSelect: document.getElementById('errStudentSelect'),
           photo: document.getElementById('errPhoto')
@@ -498,12 +432,12 @@
           printFrontsBtn: document.getElementById('printFrontsBtn'),
           printBacksBtn: document.getElementById('printBacksBtn'),
           imageMode: document.getElementById('imageMode'),
-          mirrorBack: document.getElementById('mirrorBack'),
-          nameSingleLine: document.getElementById('nameSingleLine'),
           resetBtn: document.getElementById('resetBtn'),
           addStudentBtn: document.getElementById('addStudentBtn'),
           removeStudentBtn: document.getElementById('removeStudentBtn'),
-          duplexMode: document.getElementById('duplexMode')
+          duplexMode: document.getElementById('duplexMode'),
+          offsetX: document.getElementById('offsetX'),
+          offsetY: document.getElementById('offsetY')
         },
         idStage: document.getElementById('idStage'),
         printPages: document.getElementById('printPages'),
@@ -515,10 +449,9 @@
         name: 'ADEKUNLE SAMUEL',
         adm: 'GLC/2025/001',
         klass: 'SS1 A',
-        dob: '2005-01-01',
         gender: 'Male',
         validForYears: 1,
-        valid: '2026-10-06',
+        valid: '2026-09-28',
         showGender: true,
         photo: CONFIG.defaultPhoto,
         phone: '+234 801 123 4567',
@@ -529,139 +462,172 @@
       let debounceTimer;
       const cardCaches = [];
 
-      // Utils
+      // Utilities
       const utils = {
-        sanitize(str){ return (str || '').replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`); },
-        showErr(el, show, msg){ if (!el) return; el.style.display = show ? 'block' : 'none'; if (msg) el.textContent = msg; },
-        isSafeUrl(url){ try{ const u = new URL(url); return u.protocol==='https:'||u.protocol==='http:';}catch{ return false; } },
-        preloadImage(url){ return new Promise((resolve,reject)=>{ const img=new Image(); img.crossOrigin='anonymous'; img.src=url; img.onload=()=>resolve(url); img.onerror=()=>reject(new Error('Failed to load'));}); }
+        sanitize(str) {
+          return str.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
+        },
+        showErr(el, show, msg) {
+          if (!el) return; // prevent crashes if a ref is missing
+          el.style.display = show ? 'block' : 'none';
+          if (msg) el.textContent = msg;
+        },
+        isSafeUrl(url) {
+          try {
+            const u = new URL(url);
+            return u.protocol === 'https:' || u.protocol === 'http:';
+          } catch { return false; }
+        },
+        preloadImage(url) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = url;
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(new Error('Failed to load image'));
+          });
+        }
       };
 
-      function formatDob(dobStr){
-        if (!dobStr) return '—';
-        const d = new Date(dobStr);
-        if (isNaN(d.getTime())) return '—';
-        return d.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric' });
-      }
-      function computeValidDate(years){
-        const today = new Date(); const valid = new Date(today); valid.setFullYear(today.getFullYear() + years);
+      function computeValidDate(years) {
+        const today = new Date();
+        const valid = new Date(today);
+        valid.setFullYear(today.getFullYear() + years);
         return valid.toISOString().split('T')[0];
       }
 
-      function autoshrinkOneLine(el, { min=9, max=14, step=0.5 } = {}){
-        if (!el) return;
-        el.classList.add('name-singleline'); el.classList.remove('name-twoline');
-        el.style.fontSize = max + 'px';
-        let guard = 60;
-        while (el.scrollWidth > el.clientWidth && guard--){
-          const cur = parseFloat(getComputedStyle(el).fontSize);
-          if (cur <= min) break;
-          el.style.fontSize = (cur - step) + 'px';
-        }
-      }
-      function applyTwoLine(el){
-        if (!el) return;
-        el.classList.remove('name-singleline'); el.classList.add('name-twoline'); el.style.fontSize = '';
-      }
-      function applyNameFit(container){
-        const el = container.querySelector('.student-name');
-        const single = elements.tools.nameSingleLine?.checked;
-        if (single) autoshrinkOneLine(el, { min:9, max:14 });
-        else applyTwoLine(el);
-      }
-
-      // State
+      // State Management
       const state = {
-        save(){
-          try{
+        save() {
+          try {
             const data = { students, currentStudentIndex };
             const serialized = JSON.stringify(data);
-            if (serialized.length > 4 * 1024 * 1024) alert('Warning: data too large; consider trimming.');
+            if (serialized.length > 4 * 1024 * 1024) { // Warn at ~4MB
+              alert('Warning: Data is large and may exceed storage limits. Consider exporting or removing some students.');
+            }
             localStorage.setItem('glc_id_state', serialized);
-          }catch(err){ console.error('save failed', err); }
+          } catch (err) {
+            console.error('Failed to save state:', err);
+            alert('Failed to save data. Storage may be full.');
+          }
         },
-        load(){
-          try{
-            const raw = localStorage.getItem('glc_id_state'); if (!raw) return;
+        load() {
+          try {
+            const raw = localStorage.getItem('glc_id_state');
+            if (!raw) return;
             const s = JSON.parse(raw);
             students = s.students.map(stu => { delete stu.signatureImg; return stu; }) || students;
             currentStudentIndex = Math.min(s.currentStudentIndex || 0, students.length - 1);
-            cardCaches.length = 0; students.forEach(() => cardCaches.push({ frontCache:null, backCache:null }));
-            this.updateForm(); this.updateStudentSelect();
-          }catch(err){ console.error('load failed', err); }
+            cardCaches.length = 0;
+            students.forEach(() => cardCaches.push({ frontCache: null, backCache: null }));
+            this.updateForm();
+            this.updateStudentSelect();
+          } catch (err) {
+            console.error('Failed to load state:', err);
+          }
         },
-        updateForm(){
+        updateForm() {
           const student = students[currentStudentIndex] || {};
-          Object.entries(elements.fields).forEach(([k, el])=>{
-            if (k === 'showGender') el.checked = student.showGender !== false;
-            else if (k !== 'studentSelect' && k !== 'photoFile') el.value = student[k] || '';
+          Object.entries(elements.fields).forEach(([k, el]) => {
+            if (k === 'showGender') {
+              el.checked = student.showGender !== false; // default true
+            } else if (k !== 'studentSelect' && k !== 'photoFile') {
+              el.value = student[k] || '';
+            }
           });
           elements.fields.photoFile.value = '';
         },
-        updateStudentSelect(){
-          elements.fields.studentSelect.innerHTML = students.map((s,i)=>`<option value="${i}">Student ${i+1}${s.name?`: ${s.name}`:''}</option>`).join('');
+        updateStudentSelect() {
+          elements.fields.studentSelect.innerHTML = students.map((s, i) => 
+            `<option value="${i}">Student ${i + 1}${s.name ? `: ${s.name}` : ''}</option>`
+          ).join('');
           elements.fields.studentSelect.value = currentStudentIndex;
           elements.tools.removeStudentBtn.disabled = students.length <= 1;
         },
-        updatePageCount(){
-          const perPage = CONFIG.cardsPerPage;
-          const size = document.getElementById('paperSize').value;
-          const pageCount = Math.ceil(students.length / perPage);
-          elements.pageCount.textContent =
-            `Tip: ${students.length} card${students.length!==1?'s':''} will print on ${pageCount} ${size} sheet${pageCount!==1?'s':''} `
-            + `(${perPage} cards per sheet, 85.6 mm × 54 mm, duplex: fronts on one side, backs on the other). `
-            + `For non-duplex printers, print fronts, flip the paper (long edge), and print again.`;
+        updatePageCount() {
+          const pageCount = Math.ceil(students.length / CONFIG.cardsPerPage);
+          elements.pageCount.textContent = `Tip: ${students.length} card${students.length !== 1 ? 's' : ''} will print on ${pageCount} A4 sheet${pageCount !== 1 ? 's' : ''} (4 cards per sheet, 85.6 mm × 54 mm, duplex: fronts on one side, backs on the other). For non-duplex printers, print fronts, flip the paper (long edge), and print again.`;
         }
       };
 
-      // Photos
+      // Photo Handling
       const photo = {
-        fileToDataUrl(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); },
-        async resizeImage(file, maxSize=300){
-          const img = new Image(); const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');
-          img.src = await this.fileToDataUrl(file);
-          return new Promise(resolve=>{
-            img.onload = ()=>{ const scale = Math.min(maxSize/img.width, maxSize/img.height, 1);
-              canvas.width = img.width * scale; canvas.height = img.height * scale; ctx.drawImage(img,0,0,canvas.width,canvas.height);
-              resolve(canvas.toDataURL('image/jpeg', 0.8));
-            }; img.onerror = ()=>resolve(CONFIG.defaultPhoto);
+        async fileToDataUrl(file) {
+          return new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = () => res(reader.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(file);
           });
         },
-        async setPhoto(){
+        async resizeImage(file, maxSize = 300) {
+          const img = new Image();
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          img.src = await this.fileToDataUrl(file);
+          return new Promise(resolve => {
+            img.onload = () => {
+              const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.onerror = () => resolve(CONFIG.defaultPhoto);
+          });
+        },
+        async setPhoto() {
           elements.loading.classList.add('active');
           utils.showErr(elements.errors.photo, false);
-          try{
+          try {
             const file = elements.fields.photoFile.files?.[0];
-            if (file){ const dataUrl = await this.resizeImage(file); students[currentStudentIndex].photo = dataUrl; elements.fields.photoUrl.value = ''; return dataUrl; }
+            if (file) {
+              const dataUrl = await this.resizeImage(file);
+              students[currentStudentIndex].photo = dataUrl;
+              elements.fields.photoUrl.value = '';
+              return dataUrl;
+            }
             const url = elements.fields.photoUrl.value.trim();
-            if (url && utils.isSafeUrl(url)){ await utils.preloadImage(url); students[currentStudentIndex].photo = url; return url; }
-            students[currentStudentIndex].photo = CONFIG.defaultPhoto; return CONFIG.defaultPhoto;
-          }catch(err){
-            console.error('Photo error:', err); utils.showErr(elements.errors.photo, true, 'Failed to process image.');
-            students[currentStudentIndex].photo = CONFIG.defaultPhoto; return CONFIG.defaultPhoto;
-          }finally{ elements.loading.classList.remove('active'); }
+            if (url && utils.isSafeUrl(url)) {
+              await utils.preloadImage(url);
+              students[currentStudentIndex].photo = url;
+              return url;
+            }
+            students[currentStudentIndex].photo = CONFIG.defaultPhoto;
+            return CONFIG.defaultPhoto;
+          } catch (err) {
+            console.error('Photo processing error:', err);
+            utils.showErr(elements.errors.photo, true, 'Failed to process image.');
+            students[currentStudentIndex].photo = CONFIG.defaultPhoto;
+            return CONFIG.defaultPhoto;
+          } finally {
+            elements.loading.classList.remove('active');
+          }
         },
-        async preloadLogos(){ try{ await utils.preloadImage(CONFIG.defaultLogo);}catch(err){ console.error('Preload logo failed', err);} }
+        async preloadLogos() {
+          try {
+            await utils.preloadImage(CONFIG.defaultLogo);
+          } catch (err) {
+            console.error('Failed to preload logos:', err);
+          }
+        }
       };
 
-      // Form + Preview
+      // Form Validation and Preview
       const form = {
-        validateField(field, errorEl, pattern=null){
+        validateField(field, errorEl, pattern = null) {
           const value = field.value.trim();
-          let isValid = !!value;
-          if (pattern) isValid = new RegExp(pattern).test(value);
-          else if (field.type === 'date') isValid = !!value && !isNaN(new Date(value).getTime());
+          const isValid = pattern ? new RegExp(pattern).test(value) : !!value;
           utils.showErr(errorEl, !isValid);
           field.parentElement.classList.toggle('valid', isValid);
           field.parentElement.classList.toggle('invalid', !isValid);
           return isValid;
         },
-        updateStudentData(){
+        updateStudentData() {
           students[currentStudentIndex] = {
             name: elements.fields.name.value,
             adm: elements.fields.adm.value,
             klass: elements.fields.klass.value,
-            dob: elements.fields.dob.value,
             gender: elements.fields.gender.value,
             validForYears: parseInt(elements.fields.validForYears.value),
             showGender: elements.fields.showGender.checked,
@@ -672,195 +638,339 @@
           };
           students[currentStudentIndex].valid = computeValidDate(students[currentStudentIndex].validForYears);
         },
-        cardFrontHtml(student){
-          const genderHtml = student.showGender ? `<p class="kv"><strong>Gender:</strong> <span class="val">${utils.sanitize(student.gender)}</span></p>` : '';
-          return `
-            <section class="face front" tabindex="0" aria-label="Front of ID card" aria-hidden="false">
-              <div class="watermark">GREAT LANDMARK COLLEGE</div>
-              <header class="id-card-header">
-                ${logoSVG()}
-                <h3>GREAT LANDMARK COLLEGE</h3>
-              </header>
-              <div class="body-front">
-                <div class="photo"><img src="${student.photo}" alt="Student Photo" loading="lazy" crossorigin="anonymous"></div>
-                <div class="details">
-                  <h4>STUDENT IDENTITY CARD</h4>
-                  <p class="kv"><strong>Student Name:</strong> <span class="student-name val val--name">${utils.sanitize(student.name) || '—'}</span></p>
-                  <p class="kv"><strong>Admission No:</strong> <span class="val val--adm">${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
-                  <p class="kv"><strong>Class:</strong> <span class="val">${utils.sanitize(student.klass) || '—'}</span></p>
-                  <p class="kv"><strong>Date of Birth:</strong> <span class="val val--blue">${formatDob(student.dob)}</span></p>
-                  ${genderHtml}
-                </div>
-              </div>
-              <footer class="footer">
-                IMPORTANT: This card, the property of Great Landmark College. If found, please return to the school.
-                Misuse of this card is prohibited.
-              </footer>
-            </section>
-          `;
-        },
-        cardBackHtml(student){
-          return `
-            <section class="face back" tabindex="0" aria-label="Back of ID card" aria-hidden="true">
-              <div class="watermark">GREAT LANDMARK COLLEGE</div>
-              <header class="id-card-header">
-                ${logoSVG()}
-                <h3>GREAT LANDMARK COLLEGE</h3>
-              </header>
-              <div class="body-back">
-                <div class="meta">
-                  <div class="title">Valid Until: ${student.valid}</div>
-                  <div>Date of Birth: ${formatDob(student.dob)}</div>
-                  <div>Address: ${utils.sanitize(student.address) || '—'}</div>
-                  <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
-                  <div>Email: ${utils.sanitize(student.email) || '—'}</div>
-                  <div>Website: www.greatlandmarkcollege.org</div>
-                </div>
-              </div>
-              <footer class="footer">
-                IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
-              </footer>
-            </section>
-          `;
-        },
-        async updatePreview(){
+        async updatePreview() {
           this.updateStudentData();
           const isValid = [
             this.validateField(elements.fields.name, elements.errors.name),
             this.validateField(elements.fields.adm, elements.errors.adm, elements.fields.adm.pattern),
             this.validateField(elements.fields.klass, elements.errors.klass),
-            this.validateField(elements.fields.dob, elements.errors.dob),
             this.validateField(elements.fields.gender, elements.errors.gender)
           ].every(Boolean);
 
+          // Preview only the current student
           elements.idStage.innerHTML = '';
-          const stu = students[currentStudentIndex];
+          const student = students[currentStudentIndex];
+          let genderHtml = '';
+          if (student.showGender) {
+            genderHtml = `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(student.gender)}</span></p>`;
+          }
           elements.idStage.insertAdjacentHTML('beforeend', `
             <div class="id-card-wrapper" aria-label="ID card preview">
               <div class="id-card-container" id="card-${currentStudentIndex}">
-                ${this.cardFrontHtml(stu)}
-                ${this.cardBackHtml(stu)}
+                <section class="face front" tabindex="0" aria-label="Front of ID card" aria-hidden="false">
+                  <header class="id-card-header">
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-front">
+                    <div class="photo">
+                      <img src="${student.photo}" alt="Student Photo" loading="lazy" crossorigin="anonymous">
+                    </div>
+                    <div class="details">
+                      <h4>STUDENT IDENTITY CARD</h4>
+                      <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                      <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                      <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                      ${genderHtml}
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                  </footer>
+                </section>
+                <section class="face back" tabindex="0" aria-label="Back of ID card" aria-hidden="true">
+                  <header class="id-card-header">
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-back">
+                    <div class="meta">
+                      <div class="title">Valid Until: ${student.valid}</div>
+                      <div>Address: ${utils.sanitize(student.address) || '—'}</div>
+                      <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
+                      <div>Email: ${utils.sanitize(student.email) || '—'}</div>
+                      <div>Website: www.greatlandmarkcollege.org</div>
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                  </footer>
+                </section>
               </div>
             </div>
           `);
 
-          applyNameFit(elements.idStage);
-
-          // Build print pages
+          // Generate print pages
           elements.printPages.innerHTML = '';
           const useImages = elements.tools.imageMode.checked;
           const dataUrls = [];
-          if (useImages){
+          if (useImages) {
             elements.loading.classList.add('active');
-            const temp = document.createElement('div');
-            temp.style.position = 'absolute'; temp.style.left = '-9999px'; temp.style.top = '0';
-            temp.style.width = '85.6mm'; temp.style.height = '54mm'; temp.style.overflow = 'visible';
-            document.body.appendChild(temp);
-
-            for (let i = 0; i < students.length; i++){
-              const s = students[i];
-
-              // FRONT capture
-              temp.innerHTML = this.cardFrontHtml(s);
-              applyNameFit(temp);
-              await new Promise(r=>setTimeout(r,50));
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.top = '0';
+            tempContainer.style.width = '85.6mm';
+            tempContainer.style.height = '54mm';
+            tempContainer.style.overflow = 'visible';
+            document.body.appendChild(tempContainer);
+            for (let i = 0; i < students.length; i++) {
+              const student = students[i];
+              let genderHtml = '';
+              if (student.showGender) {
+                genderHtml = `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(student.gender)}</span></p>`;
+              }
+              // Capture front
+              tempContainer.innerHTML = `
+                <section class="face front">
+                  <header class="id-card-header">
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-front">
+                    <div class="photo">
+                      <img src="${student.photo}" alt="Student Photo" crossorigin="anonymous">
+                    </div>
+                    <div class="details">
+                      <h4>STUDENT IDENTITY CARD</h4>
+                      <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                      <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                      <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                      ${genderHtml}
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                  </footer>
+                </section>
+              `;
               await document.fonts.ready;
-              const frontUrl = await html2canvas(temp.firstChild, { scale:CONFIG.captureScale, useCORS:true, logging:false, backgroundColor:null })
-                .then(c => c.toDataURL('image/png'));
+              const frontUrl = await html2canvas(tempContainer.firstChild, {
+                scale: CONFIG.captureScale,
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+              }).then(c => c.toDataURL('image/png'));
 
-              // BACK capture
-              temp.innerHTML = this.cardBackHtml(s);
-              await new Promise(r=>setTimeout(r,50));
+              // Capture back
+              tempContainer.innerHTML = `
+                <section class="face back">
+                  <header class="id-card-header">
+                    <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                    <h3>GREAT LANDMARK COLLEGE</h3>
+                  </header>
+                  <div class="body-back">
+                    <div class="meta">
+                      <div class="title">Valid Until: ${student.valid}</div>
+                      <div>Address: ${utils.sanitize(student.address) || '—'}</div>
+                      <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
+                      <div>Email: ${utils.sanitize(student.email) || '—'}</div>
+                      <div>Website: www.greatlandmarkcollege.org</div>
+                    </div>
+                  </div>
+                  <footer class="footer">
+                    IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                  </footer>
+                </section>
+              `;
               await document.fonts.ready;
-              const backUrl = await html2canvas(temp.firstChild, { scale:CONFIG.captureScale, useCORS:true, logging:false, backgroundColor:null })
-                .then(c => c.toDataURL('image/png'));
-
+              const backUrl = await html2canvas(tempContainer.firstChild, {
+                scale: CONFIG.captureScale,
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+              }).then(c => c.toDataURL('image/png'));
               dataUrls.push({ front: frontUrl, back: backUrl });
             }
-            document.body.removeChild(temp);
+            document.body.removeChild(tempContainer);
             elements.loading.classList.remove('active');
           }
 
-          for (let i = 0; i < students.length; i += CONFIG.cardsPerPage){
+          for (let i = 0; i < students.length; i += CONFIG.cardsPerPage) {
             const pageStudents = students.slice(i, i + CONFIG.cardsPerPage);
             let frontHtml = '<div class="front-grid">';
-            let backHtml  = '<div class="back-grid">';
-            pageStudents.forEach((s, idx) => {
-              const globalIdx = i + idx;
-              if (useImages){
-                const { front, back } = dataUrls[globalIdx];
-                frontHtml += `<div class="id-card-wrapper"><img src="${front}" style="width:100%;height:100%;display:block"/></div>`;
-                backHtml  += `<div class="id-card-wrapper"><img src="${back}"  style="width:100%;height:100%;display:block"/></div>`;
-              }else{
+            let backHtml = '<div class="back-grid">';
+            pageStudents.forEach((student, index) => {
+              const globalIndex = i + index;
+              let genderHtml = '';
+              if (student.showGender) {
+                genderHtml = `<p class="kv"><strong>Gender:</strong> <span>${utils.sanitize(student.gender)}</span></p>`;
+              }
+              if (useImages) {
+                const {front, back} = dataUrls[globalIndex];
                 frontHtml += `
-                  <div class="id-card-wrapper" aria-hidden="true">
-                    <div class="id-card-container">
-                      ${this.cardFrontHtml(s)}
-                    </div>
-                  </div>`;
+                  <div class="id-card-wrapper">
+                    <img src="${front}" style="width:100%; height:100%; display:block;" />
+                  </div>
+                `;
                 backHtml += `
+                  <div class="id-card-wrapper">
+                    <img src="${back}" style="width:100%; height:100%; display:block;" />
+                  </div>
+                `;
+              } else {
+                const frontCardHtml = `
                   <div class="id-card-wrapper" aria-hidden="true">
                     <div class="id-card-container">
-                      ${this.cardBackHtml(s)}
+                      <section class="face front">
+                        <header class="id-card-header">
+                          <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                          <h3>GREAT LANDMARK COLLEGE</h3>
+                        </header>
+                        <div class="body-front">
+                          <div class="photo">
+                            <img src="${student.photo}" alt="Student Photo" crossorigin="anonymous">
+                          </div>
+                          <div class="details">
+                            <h4>STUDENT IDENTITY CARD</h4>
+                            <p class="kv"><strong>Student Name:</strong> <span>${utils.sanitize(student.name) || '—'}</span></p>
+                            <p class="kv"><strong>Admission No:</strong> <span>${student.adm?.match(elements.fields.adm.pattern) ? student.adm : '—'}</span></p>
+                            <p class="kv"><strong>Class:</strong> <span>${utils.sanitize(student.klass) || '—'}</span></p>
+                            ${genderHtml}
+                          </div>
+                        </div>
+                        <footer class="footer">
+                          IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.
+                        </footer>
+                      </section>
                     </div>
-                  </div>`;
+                  </div>
+                `;
+                const backCardHtml = `
+                  <div class="id-card-wrapper" aria-hidden="true">
+                    <div class="id-card-container">
+                      <section class="face back">
+                        <header class="id-card-header">
+                          <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" crossorigin="anonymous" loading="eager" />
+                          <h3>GREAT LANDMARK COLLEGE</h3>
+                        </header>
+                        <div class="body-back">
+                          <div class="meta">
+                            <div class="title">Valid Until: ${student.valid}</div>
+                            <div>Address: ${utils.sanitize(student.address) || '—'}</div>
+                            <div>Phone: ${utils.sanitize(student.phone) || '—'}</div>
+                            <div>Email: ${utils.sanitize(student.email) || '—'}</div>
+                            <div>Website: www.greatlandmarkcollege.org</div>
+                          </div>
+                        </div>
+                        <footer class="footer">
+                          IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.
+                        </footer>
+                      </section>
+                    </div>
+                  </div>
+                `;
+                frontHtml += frontCardHtml;
+                backHtml += backCardHtml;
               }
             });
-            frontHtml += '</div>'; backHtml += '</div>';
+            frontHtml += '</div>';
+            backHtml += '</div>';
             elements.printPages.insertAdjacentHTML('beforeend', `<div class="print-page">${frontHtml}${backHtml}</div>`);
           }
 
-          if (!useImages){
-            Array.from(elements.printPages.querySelectorAll('.front-grid')).forEach(applyNameFit);
-          }
-
-          cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || { frontCache:null, backCache:null };
+          cardCaches[currentStudentIndex] = cardCaches[currentStudentIndex] || { frontCache: null, backCache: null };
           card.clearCache(currentStudentIndex);
-          state.save(); state.updateStudentSelect(); state.updatePageCount();
+          state.save();
+          state.updateStudentSelect();
+          state.updatePageCount();
           return isValid;
         }
       };
 
-      // Card helpers
+      // Card Download and Print
       const card = {
-        clearCache(index){ if (index!==undefined && cardCaches[index]) cardCaches[index].frontCache = cardCaches[index].backCache = null; }
-      };
-
-      // Print toggle
-      const printHelper = {
-        togglePrintBack(isBack){
-          document.querySelectorAll('.print-page').forEach(p => p.classList.toggle('print-back', !!isBack));
+        clearCache(index) {
+          if (index !== undefined && cardCaches[index]) {
+            cardCaches[index].frontCache = cardCaches[index].backCache = null;
+          }
+        },
+        async captureFace(index, selector) {
+          elements.loading.classList.add('active');
+          const cacheKey = selector.includes('.front') ? 'frontCache' : 'backCache';
+          if (cardCaches[index]?.[cacheKey]) {
+            elements.loading.classList.remove('active');
+            return cardCaches[index][cacheKey];
+          }
+          const face = document.querySelector(`#card-${index} ${selector}`) || document.querySelector(`#print-card-${index} ${selector}`);
+          if (!face) throw new Error('Card not found');
+          const container = face.closest('.id-card-container');
+          const wasFlipped = container.classList.contains('flipped');
+          const originalStyle = face.style.boxShadow;
+          face.style.boxShadow = 'none';
+          if (selector.includes('.front') && wasFlipped) container.classList.remove('flipped');
+          if (selector.includes('.back') && !wasFlipped) container.classList.add('flipped');
+          await new Promise(r => setTimeout(r, 100));
+          try {
+            const canvas = await html2canvas(face, {
+              scale: CONFIG.captureScale,
+              useCORS: true,
+              logging: false,
+              backgroundColor: null
+            });
+            cardCaches[index] = cardCaches[index] || { frontCache: null, backCache: null };
+            cardCaches[index][cacheKey] = canvas.toDataURL('image/png');
+            return cardCaches[index][cacheKey];
+          } catch (err) {
+            console.error(`Failed to capture ${selector} for card ${index}:`, err);
+            throw err;
+          } finally {
+            face.style.boxShadow = originalStyle;
+            if (selector.includes('.front') && wasFlipped) container.classList.add('flipped');
+            if (selector.includes('.back') && !wasFlipped) container.classList.remove('flipped');
+            elements.loading.classList.remove('active');
+          }
+        },
+        triggerDownload(dataUrl, filename) {
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
         }
       };
 
-      // Events
-      const events = {
-        init(){
-          const savedMode = localStorage.getItem('glc_id_name_mode');
-          if (savedMode) elements.tools.nameSingleLine.checked = (savedMode === 'single');
-
-          elements.form.addEventListener('input', (e)=>{
-            clearTimeout(debounceTimer);
-            if (e.target === elements.fields.photoUrl){
-              elements.fields.photoFile.value = '';
-              photo.setPhoto().then(()=>form.updatePreview());
+      // Print Helper
+      const printHelper = {
+        togglePrintBack(isBack) {
+          const printPages = document.querySelectorAll('.print-page');
+          printPages.forEach(page => {
+            if (isBack) {
+              page.classList.add('print-back');
+            } else {
+              page.classList.remove('print-back');
             }
-            debounceTimer = setTimeout(()=>form.updatePreview(), CONFIG.debounceDelay);
+          });
+        }
+      };
+
+      // Event Handlers
+      const events = {
+        init() {
+          elements.form.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            if (e.target === elements.fields.photoUrl) {
+              elements.fields.photoFile.value = '';
+              photo.setPhoto().then(() => form.updatePreview());
+            }
+            debounceTimer = setTimeout(() => form.updatePreview(), CONFIG.debounceDelay);
           });
 
-          elements.fields.photoFile.addEventListener('change', async ()=>{
-            await photo.setPhoto(); form.updatePreview();
+          elements.fields.photoFile.addEventListener('change', async () => {
+            await photo.setPhoto();
+            form.updatePreview();
           });
 
-          elements.form.addEventListener('submit', async (e)=>{
+          elements.form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!form.updatePreview()) return;
             await photo.setPhoto();
           });
 
-          elements.tools.flipBtn.addEventListener('click', ()=>{
+          elements.tools.flipBtn.addEventListener('click', () => {
             const container = document.querySelector(`#card-${currentStudentIndex}`);
-            if (container){
+            if (container) {
               container.classList.toggle('flipped');
               const isFlipped = container.classList.contains('flipped');
               container.querySelector('.front').setAttribute('aria-hidden', isFlipped);
@@ -868,67 +978,84 @@
             }
           });
 
-          elements.idStage.addEventListener('keydown', (e)=>{
-            if (e.key===' ' || e.key==='Enter'){ e.preventDefault(); elements.tools.flipBtn.click(); }
+          elements.idStage.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              elements.tools.flipBtn.click();
+            }
           });
 
-          elements.tools.printFrontsBtn.addEventListener('click', ()=>{ printHelper.togglePrintBack(false); window.print(); });
-          elements.tools.printBacksBtn.addEventListener('click', ()=>{ printHelper.togglePrintBack(true);  window.print(); });
+          elements.tools.printFrontsBtn.addEventListener('click', () => {
+            printHelper.togglePrintBack(false);
+            window.print();
+          });
 
-          elements.tools.imageMode.addEventListener('change', ()=> form.updatePreview());
+          elements.tools.printBacksBtn.addEventListener('click', () => {
+            printHelper.togglePrintBack(true);
+            window.print();
+          });
 
-          document.getElementById('paperSize').addEventListener('change', (e)=>{
-            if (e.target.value==="Letter"){ document.documentElement.style.setProperty('--page-w','215.9mm'); document.documentElement.style.setProperty('--page-h','279.4mm'); }
-            else { document.documentElement.style.setProperty('--page-w','210mm');   document.documentElement.style.setProperty('--page-h','297mm'); }
+          elements.tools.imageMode.addEventListener('change', () => {
             form.updatePreview();
           });
 
-          elements.tools.duplexMode.addEventListener('change', (e)=>{
+          document.getElementById('paperSize').addEventListener('change', (e)=>{
+            if(e.target.value==="Letter"){
+              document.documentElement.style.setProperty('--page-w','215.9mm');
+              document.documentElement.style.setProperty('--page-h','279.4mm');
+            } else {
+              document.documentElement.style.setProperty('--page-w','210mm');
+              document.documentElement.style.setProperty('--page-h','297mm');
+            }
+            form.updatePreview();
+          });
+
+          elements.tools.duplexMode.addEventListener('change', (e) => {
             document.documentElement.style.setProperty('--duplex-rotate', e.target.value === 'long' ? '180deg' : '0deg');
           });
 
-          elements.tools.mirrorBack.addEventListener('change', (e)=>{
-            document.documentElement.style.setProperty('--back-mirror', e.target.checked ? '-1' : '1');
+          elements.tools.resetBtn.addEventListener('click', () => {
+            localStorage.removeItem('glc_id_state');
+            window.location.reload();
           });
 
-          elements.tools.nameSingleLine.addEventListener('change', (e)=>{
-            localStorage.setItem('glc_id_name_mode', e.target.checked ? 'single' : 'wrap');
+          elements.tools.addStudentBtn.addEventListener('click', () => {
+            students.push({
+              name: '', adm: '', klass: '', gender: 'Male', validForYears: 1, valid: computeValidDate(1),
+              showGender: true,
+              photo: CONFIG.defaultPhoto, phone: '', email: '', address: ''
+            });
+            currentStudentIndex = students.length - 1;
+            state.updateForm();
             form.updatePreview();
           });
 
-          elements.tools.resetBtn.addEventListener('click', ()=>{
-            localStorage.removeItem('glc_id_state'); window.location.reload();
-          });
-
-          elements.tools.addStudentBtn.addEventListener('click', ()=>{
-            students.push({
-              name:'', adm:'', klass:'', dob:'', gender:'Male', validForYears:1, valid: computeValidDate(1),
-              showGender:true, photo:CONFIG.defaultPhoto, phone:'', email:'', address:''
-            });
-            currentStudentIndex = students.length - 1;
-            state.updateForm(); form.updatePreview();
-          });
-
-          elements.tools.removeStudentBtn.addEventListener('click', ()=>{
+          elements.tools.removeStudentBtn.addEventListener('click', () => {
             if (students.length <= 1) return;
             students.splice(currentStudentIndex, 1);
             currentStudentIndex = Math.min(currentStudentIndex, students.length - 1);
-            state.updateForm(); form.updatePreview();
+            state.updateForm();
+            form.updatePreview();
           });
 
-          elements.fields.studentSelect.addEventListener('change', (e)=>{
+          elements.fields.studentSelect.addEventListener('change', (e) => {
             currentStudentIndex = parseInt(e.target.value, 10);
-            state.updateForm(); form.updatePreview();
+            state.updateForm();
+            form.updatePreview();
           });
 
-          if (!window.html2canvas) alert('html2canvas not loaded.');
+          if (!window.html2canvas) {
+            alert('html2canvas not loaded.');
+          }
         }
       };
 
       // Boot
-      window.addEventListener('load', ()=>{
+      window.addEventListener('load', () => {
         state.load();
-        photo.preloadLogos().then(()=>{ form.updatePreview(); });
+        photo.preloadLogos().then(() => {
+          form.updatePreview();
+        });
         events.init();
       });
     })();
