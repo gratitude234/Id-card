@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ID Card Generator — Great Landmark College</title>
 
-  <!-- html2canvas (only used for optional "Render as images" mode) -->
+  <!-- html2canvas only used for optional "Render as images" mode -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,7 @@
       --radius:12px; --pad:16px; --shadow:0 4px 12px rgba(0,0,0,.10);
 
       /* paper */
-      --page-w:210mm; --page-h:297mm; --duplex-rotate:180deg;
+      --page-w:210mm; --page-h:297mm;
 
       /* true card size */
       --card-w:85.6mm; --card-h:54mm;
@@ -75,7 +75,7 @@
       box-shadow:0 4px 15px rgba(0,0,0,.18); overflow:hidden;
       display:flex; flex-direction:column; backface-visibility:hidden;
     }
-    .back{transform:rotateY(180deg)}
+    .back{transform:rotateY(180deg)} /* preview only */
 
     /* main sections above watermark */
     .id-card-header,.body-front,.body-back,.footer{position:relative;z-index:1}
@@ -105,7 +105,7 @@
 
     .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
 
-    /* WATERMARK — simple + attractive */
+    /* Watermark — simple */
     .wm{
       position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
       pointer-events:none; z-index:0;
@@ -119,7 +119,7 @@
       position:absolute; width:78%; height:78%;
       border-radius:50%;
       border:.6mm solid var(--wm-ring);
-      opacity:.6; /* very soft */
+      opacity:.6;
     }
     .wm .script{
       position:absolute; left:-10%; right:-10%; top:52%;
@@ -132,44 +132,12 @@
       text-shadow:0 0 1px rgba(0,0,0,.03);
     }
 
-    /* PRINTING LAYOUT */
-    #printPages{display:none} /* hidden on screen */
-    .print-page{display:block;width:var(--page-w);height:var(--page-h);position:relative;margin:0 auto;page-break-after:always}
-    .grid-surface{position:absolute;inset:0;display:grid;justify-content:center;align-content:start}
-    .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
-    .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
-    .back-surface{transform:rotate(var(--duplex-rotate))}
+    /* print host (not used to trigger printing anymore, but kept if you want preview pages) */
+    #printPages{display:none}
 
     .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
     .loading.active{display:flex;gap:8px}
     .loading::before{content:"⏳"}
-
-    /* PRINT RULES (hide UI, show pages) */
-    @media print{
-      @page{size:auto;margin:0}
-      html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
-      body{background:#fff;padding:0;margin:0}
-
-      /* hide all app chrome */
-      .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
-
-      /* SHOW print host + pages */
-      #printPages{display:block !important}
-
-      /* default: fronts if no class */
-      .front-surface{display:grid}
-      .back-surface{display:none}
-
-      /* explicit modes set by JS */
-      body.print-fronts .front-surface{display:grid !important}
-      body.print-fronts .back-surface{display:none !important}
-
-      body.print-backs .front-surface{display:none !important}
-      body.print-backs .back-surface{display:grid !important}
-
-      .id-card-header{background-color:var(--blue) !important;color:#fff !important;border-bottom-color:var(--yellow) !important}
-      .footer{background-color:var(--red) !important;color:#fff !important}
-    }
 
     @media (max-width:768px){
       body{padding:12px}
@@ -186,7 +154,7 @@
 </head>
 <body>
 
-  <!-- PRINT HOST lives OUTSIDE .container so it’s not hidden in @media print -->
+  <!-- We no longer rely on #printPages for the actual print. Printing opens a clean window. -->
   <div id="printPages" role="presentation"></div>
 
   <div class="container" aria-live="polite">
@@ -314,8 +282,10 @@
     <h2>Generated ID Card (Current Student)</h2>
     <div class="tools">
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
+
       <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
       <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
+      <button class="btn secondary" id="printDuplexBtn" type="button">Duplex (1-Click)</button>
 
       <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
         Paper
@@ -335,14 +305,14 @@
     </div>
 
     <div class="id-stage" id="idStage"></div>
-    <p class="notes" id="pageNote">Tip: Choose 4 or 8 cards per sheet. For duplex, print fronts then backs (long edge).</p>
+    <p class="notes" id="pageNote">Tip: Use <b>Duplex (1-Click)</b> if your printer supports automatic duplex. Otherwise print Fronts, reinsert paper, then print Backs. Choose <b>Long-edge</b> unless your printer flips on the short edge.</p>
   </div>
 
   <script>
   (function(){
     const CONFIG={
       defaultPhoto:'https://via.placeholder.com/300x300?text=Student',
-      defaultLogo:'/glc-logo.jpg', // <-- your actual logo file (same-origin)
+      defaultLogo:'/glc-logo.jpg', // your actual logo (same-origin)
       captureScale:2
     };
 
@@ -356,6 +326,7 @@
         flipBtn:document.getElementById('flipBtn'),
         printFrontsBtn:document.getElementById('printFrontsBtn'),
         printBacksBtn:document.getElementById('printBacksBtn'),
+        printDuplexBtn:document.getElementById('printDuplexBtn'),
         paperSize:document.getElementById('paperSize'),
         duplexMode:document.getElementById('duplexMode'),
         cardsPerPage:document.getElementById('cardsPerPage'),
@@ -508,11 +479,10 @@
           </div>
         </div>`;
 
-      await buildPrintPages();
       return ok;
     }
 
-    /* Print page builders */
+    /* Watermarked card blocks for printing */
     function wmBlock(){
       return `
         <div class="wm">
@@ -524,47 +494,49 @@
 
     function htmlFrontCard(s){
       const longName=(s.name||'').length>24;
-      const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
-      wrap.innerHTML=`<div class="id-card-container">
-        <section class="face print">
-          ${wmBlock()}
-          <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
-          <div class="body-front">
-            <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo"></div>
-            <div class="details">
-              <h4>STUDENT IDENTITY CARD</h4>
-              <p class="kv name ${longName?'long':''}"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
-              <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
-              <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
-              <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
-              ${s.showGender?`<p class="kv"><strong>Gender:</strong> <span>${sanitize(s.gender)}</span></p>`:''}
-            </div>
+      return `
+        <div class="id-card-wrapper print">
+          <div class="id-card-container">
+            <section class="face print">
+              ${wmBlock()}
+              <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
+              <div class="body-front">
+                <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo"></div>
+                <div class="details">
+                  <h4>STUDENT IDENTITY CARD</h4>
+                  <p class="kv name ${longName?'long':''}"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
+                  <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
+                  <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
+                  <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
+                  ${s.showGender?`<p class="kv"><strong>Gender:</strong> <span>${sanitize(s.gender)}</span></p>`:''}
+                </div>
+              </div>
+              <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
+            </section>
           </div>
-          <footer class="footer">IMPORTANT. This card is property of Great Landmark College. If found, return to the school. Misuse is prohibited.</footer>
-        </section>
-      </div>`;
-      return wrap;
+        </div>`;
     }
 
     function htmlBackCard(s){
-      const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
-      wrap.innerHTML=`<div class="id-card-container">
-        <section class="face print">
-          ${wmBlock()}
-          <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
-          <div class="body-back">
-            <div class="meta">
-              <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${s.validUntil}</div>
-              <div>Address: ${sanitize(s.address)||'—'}</div>
-              <div>Phone: ${sanitize(s.phone)||'—'}</div>
-              <div>Email: ${sanitize(s.email)||'—'}</div>
-              <div>Website: www.greatlandmarkcollege.org</div>
-            </div>
+      return `
+        <div class="id-card-wrapper print">
+          <div class="id-card-container">
+            <section class="face print">
+              ${wmBlock()}
+              <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
+              <div class="body-back">
+                <div class="meta">
+                  <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${s.validUntil}</div>
+                  <div>Address: ${sanitize(s.address)||'—'}</div>
+                  <div>Phone: ${sanitize(s.phone)||'—'}</div>
+                  <div>Email: ${sanitize(s.email)||'—'}</div>
+                  <div>Website: www.greatlandmarkcollege.org</div>
+                </div>
+              </div>
+              <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
+            </section>
           </div>
-          <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
-        </section>
-      </div>`;
-      return wrap;
+        </div>`;
     }
 
     async function renderAllToImages(){
@@ -578,18 +550,19 @@
       for(let i=0;i<students.length;i++){
         const s=students[i];
         try{
-          tmp.innerHTML=''; tmp.appendChild(htmlFrontCard(s));
+          tmp.innerHTML = htmlFrontCard(s);
           await document.fonts.ready;
           const frontCanvas = await html2canvas(tmp.querySelector('.face'),{scale:CONFIG.captureScale,useCORS:true,backgroundColor:'#ffffff'});
           const front = frontCanvas.toDataURL('image/png');
 
-          tmp.innerHTML=''; tmp.appendChild(htmlBackCard(s));
+          tmp.innerHTML = htmlBackCard(s);
           await document.fonts.ready;
           const backCanvas = await html2canvas(tmp.querySelector('.face'),{scale:CONFIG.captureScale,useCORS:true,backgroundColor:'#ffffff'});
           const back = backCanvas.toDataURL('image/png');
 
           out.push({front,back});
         }catch(e){
+          // Fallback: if canvas tainted, disable image mode and bail to HTML mode
           els.tools.imageMode.checked=false;
           document.body.removeChild(tmp);
           els.loading.classList.remove('active');
@@ -601,59 +574,111 @@
       return out;
     }
 
-    async function buildPrintPages(){
-      const per=Number(els.tools.cardsPerPage.value);
-      const cols=2, rows=per/cols;
-      const gap= per===8 ? '6mm' : '10mm';
-      const useImages=els.tools.imageMode.checked;
+    /* Build a complete, self-contained print document */
+    function buildPrintDocumentHTML(mode, opts){
+      const {per, cols, rows, gap, pageW, pageH, rotateBack, useImages, images} = opts;
+      const css = `
+        <style>
+          :root{
+            --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c;
+            --page-w:${pageW}; --page-h:${pageH};
+            --card-w:85.6mm; --card-h:54mm;
+            --wm-opacity:.09; --wm-ring:rgba(13,47,111,.08); --wm-script:rgba(13,47,111,.12);
+          }
+          *{box-sizing:border-box}
+          @page{size:auto;margin:0}
+          html,body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact; print-color-adjust:exact; forced-color-adjust:none}
+          .print-page{width:var(--page-w);height:var(--page-h);position:relative;page-break-after:always}
+          .grid{position:absolute;inset:0;display:grid;justify-content:center;align-content:start;gap:${gap};
+                 grid-template-columns:repeat(${cols}, var(--card-w));
+                 grid-template-rows:repeat(${rows}, var(--card-h));}
+          .rotate-back{transform:rotate(${rotateBack}); -webkit-transform:rotate(${rotateBack}); transform-origin:center center;}
+          .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
+          .face.print{width:var(--card-w);height:var(--card-h);border-radius:2mm;overflow:hidden}
+          .id-card-header{height:40px;display:flex;align-items:center;gap:10px;background:#0d2f6f;color:#fff;border-bottom:3px solid #f9a825;padding:8px 14px}
+          .id-card-header .logo{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#fff;flex-shrink:0}
+          .id-card-header h3{margin:0;font-weight:800;font-size:15px;letter-spacing:.3px}
+          .body-front{padding:12px;display:flex;gap:12px;align-items:flex-start}
+          .body-back{padding:6mm;text-align:center}
+          .meta{font-size:3.2mm;line-height:1.3}
+          .photo{width:74px;height:74px;border:2px solid #f9a825;border-radius:10px;overflow:hidden}
+          .photo img{width:100%;height:100%;object-fit:cover}
+          .details{flex:1;min-width:0}
+          .details h4{margin:0 0 6px;font-size:13px;color:#0d2f6f;border-bottom:1px solid #eee;padding-bottom:4px;font-weight:800}
+          .kv{display:flex;gap:8px;margin:3px 0;font-size:11px;line-height:1.35}
+          .kv strong{color:#0d2f6f;min-width:92px}
+          .kv span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+          .footer{margin-top:auto;background:#e54c4c;color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
+          /* Watermark */
+          .wm{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0}
+          .wm .crest{max-width:220px;width:65%;filter:grayscale(100%);opacity:var(--wm-opacity)}
+          .wm .ring{position:absolute;width:78%;height:78%;border-radius:50%;border:.6mm solid var(--wm-ring);opacity:.6}
+          .wm .script{position:absolute; left:-10%; right:-10%; top:52%; transform:rotate(-18deg) translateY(-50%); text-align:center; font-family:"Great Vibes", cursive; font-size:24px; letter-spacing:.05em; color:var(--wm-script); opacity:.75; text-shadow:0 0 1px rgba(0,0,0,.03)}
+          img{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        </style>`;
 
-      els.printPages.innerHTML='';
+      const begin = `<!doctype html><html><head><meta charset="utf-8"><title>Print ${mode}</title>${css}</head><body>`;
+      const end = `<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),100));</script></body></html>`;
+
+      // Build pages
+      const chunks = [];
+      for(let i=0;i<students.length;i+=per){
+        const pageStudents = students.slice(i,i+per);
+
+        // FRONT PAGE
+        if(mode==='fronts' || mode==='duplex'){
+          const gridItems = pageStudents.map((s,ix)=>{
+            if(useImages && images){ return `<div class="id-card-wrapper print"><img src="${images[i+ix].front}" style="width:100%;height:100%;display:block" alt="Front"></div>`; }
+            return htmlFrontCard(s);
+          }).join('');
+          chunks.push(`<div class="print-page"><div class="grid">${gridItems}</div></div>`);
+        }
+
+        // BACK PAGE
+        if(mode==='backs' || mode==='duplex'){
+          const gridItemsB = pageStudents.map((s,ix)=>{
+            if(useImages && images){ return `<div class="id-card-wrapper print"><img src="${images[i+ix].back}" style="width:100%;height:100%;display:block" alt="Back"></div>`; }
+            return htmlBackCard(s);
+          }).join('');
+          chunks.push(`<div class="print-page"><div class="grid rotate-back">${gridItemsB}</div></div>`);
+        }
+      }
+
+      return begin + chunks.join('') + end;
+    }
+
+    function getLayout(){
+      const per = Number(els.tools.cardsPerPage.value);
+      const cols = 2, rows = per/cols;
+      const gap = per===8 ? '6mm' : '10mm';
+      const paper = els.tools.paperSize.value;
+      const pageW = (paper==='Letter') ? '215.9mm' : '210mm';
+      const pageH = (paper==='Letter') ? '279.4mm' : '297mm';
+      const rotateBack = (els.tools.duplexMode.value==='long') ? '180deg' : '0deg';
+      return {per, cols, rows, gap, pageW, pageH, rotateBack};
+    }
+
+    async function openPrintWindow(mode){
+      // Open window immediately to avoid popup blockers
+      const win = window.open('', '_blank');
+      if(!win){ alert('Popup blocked. Allow popups to print.'); return; }
+      win.document.write('<!doctype html><title>Preparing…</title><body style="font:14px system-ui;padding:24px">Preparing…</body>');
+
+      const useImages = els.tools.imageMode.checked;
       let images=null;
       if(useImages){
-        images=await renderAllToImages();
-        if(!images){ return buildPrintPages(); } // fallback to HTML mode if tainted
+        images = await renderAllToImages(); // may toggle off if tainted
+        if(!images){ /* Fell back to HTML mode */ }
       }
 
-      for(let i=0;i<students.length;i+=per){
-        const pageStudents=students.slice(i,i+per);
-        const page=document.createElement('div'); page.className='print-page';
+      const layout = getLayout();
+      const html = buildPrintDocumentHTML(mode, {...layout, useImages: !!(useImages && images), images});
 
-        const front=document.createElement('div'); front.className='grid-surface front-surface';
-        front.style.gridTemplateColumns=`repeat(${cols}, var(--card-w))`;
-        front.style.gridTemplateRows=`repeat(${rows}, var(--card-h))`;
-        front.style.gap=gap;
-
-        const back=document.createElement('div'); back.className='grid-surface back-surface';
-        back.style.gridTemplateColumns=`repeat(${cols}, var(--card-w))`;
-        back.style.gridTemplateRows=`repeat(${rows}, var(--card-h))`;
-        back.style.gap=gap;
-
-        pageStudents.forEach((s,ix)=>{
-          const gi=i+ix;
-          if(useImages){
-            const fw=document.createElement('div'); fw.className='id-card-wrapper print';
-            fw.innerHTML=`<img src="${images[gi].front}" style="width:100%;height:100%;display:block" alt="Card front">`;
-            const bw=document.createElement('div'); bw.className='id-card-wrapper print';
-            bw.innerHTML=`<img src="${images[gi].back}" style="width:100%;height:100%;display:block" alt="Card back">`;
-            front.appendChild(fw); back.appendChild(bw);
-          }else{
-            front.appendChild(htmlFrontCard(s));
-            back.appendChild(htmlBackCard(s));
-          }
-        });
-
-        page.appendChild(front); page.appendChild(back);
-        els.printPages.appendChild(page);
-      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      try{ win.focus(); }catch{}
     }
-
-    /* print triggers using body classes */
-    function printMode(which){
-      document.body.classList.remove('print-fronts','print-backs');
-      document.body.classList.add(which==='front'?'print-fronts':'print-backs');
-      requestAnimationFrame(()=>{ setTimeout(()=>window.print(), 50); });
-    }
-    window.addEventListener('afterprint', ()=>{ document.body.classList.remove('print-fronts','print-backs'); });
 
     /* EVENTS */
     function bind(){
@@ -680,23 +705,10 @@
         c.querySelector('.back').setAttribute('aria-hidden',!f);
       });
 
-      els.tools.paperSize.addEventListener('change',(e)=>{
-        if(e.target.value==='Letter'){
-          document.documentElement.style.setProperty('--page-w','215.9mm');
-          document.documentElement.style.setProperty('--page-h','279.4mm');
-        }else{
-          document.documentElement.style.setProperty('--page-w','210mm');
-          document.documentElement.style.setProperty('--page-h','297mm');
-        }
-        buildPrintPages();
-      });
-
-      els.tools.duplexMode.addEventListener('change',(e)=>{
-        document.documentElement.style.setProperty('--duplex-rotate', e.target.value==='long'?'180deg':'0deg');
-      });
-
-      els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect(); buildPrintPages();});
-      els.tools.imageMode.addEventListener('change', ()=>buildPrintPages());
+      els.tools.paperSize.addEventListener('change',()=>updateSelect());
+      els.tools.duplexMode.addEventListener('change',()=>{ /* rotation used in print doc */ });
+      els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect();});
+      els.tools.imageMode.addEventListener('change', ()=>{ /* handled at print time */ });
 
       document.getElementById('resetBtn').addEventListener('click', ()=>{localStorage.removeItem('glc_id_state_v2'); location.reload();});
 
@@ -712,9 +724,10 @@
 
       els.fields.studentSelect.addEventListener('change',(e)=>{idx=parseInt(e.target.value,10); loadForm(); updatePreview();});
 
-      // rebuild pages right before printing
-      els.tools.printFrontsBtn.addEventListener('click', async ()=>{ await buildPrintPages(); printMode('front'); });
-      els.tools.printBacksBtn.addEventListener('click',  async ()=>{ await buildPrintPages(); printMode('back');  });
+      // PRINT buttons -> use dedicated print window (fixes "backs show fronts" and mirror issues)
+      els.tools.printFrontsBtn.addEventListener('click', ()=>openPrintWindow('fronts'));
+      els.tools.printBacksBtn.addEventListener('click',  ()=>openPrintWindow('backs'));
+      els.tools.printDuplexBtn.addEventListener('click', ()=>openPrintWindow('duplex'));
     }
 
     (async function init(){
