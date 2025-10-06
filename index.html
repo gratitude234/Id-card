@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>ID Card Generator — Great Landmark College</title>
 
   <!-- html2canvas (only used for optional "Render as images" mode) -->
@@ -10,13 +10,12 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c; --bg:#f8fafc; --ink:#1e293b;
-      --radius:16px; --pad:20px; --shadow:0 8px 32px rgba(0,0,0,.08); --shadow-lg:0 20px 40px rgba(0,0,0,.12);
-      --border:1px solid #e2e8f0;
+      --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c; --bg:#f4f7f6; --ink:#15202b;
+      --radius:12px; --pad:16px; --shadow:0 4px 12px rgba(0,0,0,.10);
 
       /* paper */
       --page-w:210mm; --page-h:297mm;
@@ -25,614 +24,164 @@
       --card-w:85.6mm; --card-h:54mm;
 
       /* watermark tuning */
-      --wm-opacity: .09;
-      --wm-ring: rgba(13,47,111,.08);
-      --wm-script: rgba(13,47,111,.12);
+      --wm-opacity:.09; --wm-ring:rgba(13,47,111,.08); --wm-script:rgba(13,47,111,.12);
 
-      /* spacing scales */
-      --space-xs: 0.5rem; --space-sm: 1rem; --space-md: 1.5rem; --space-lg: 2rem; --space-xl: 3rem;
+      /* mobile */
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --mobile-max-card: min(96vw, 420px);
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, var(--bg) 0%, #e2e8f0 100%);
-      color: var(--ink);
-      padding: clamp(1rem, 4vw, var(--space-md));
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      line-height: 1.6;
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+      background:var(--bg); color:var(--ink);
+      padding:16px; display:flex; flex-direction:column; align-items:center;
     }
 
-    .container {
-      background: #fff;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      max-width: 1200px;
-      width: 100%;
-      padding: var(--space-lg);
-      margin-bottom: var(--space-md);
+    .container{background:#fff;border-radius:10px;box-shadow:var(--shadow);max-width:980px;width:100%;padding:20px}
+    h1{margin:0 0 12px;text-align:center;color:var(--blue);font-size:26px}
+    h2{margin:18px 0 8px;color:var(--blue);border-bottom:2px solid #eee;padding-bottom:6px;font-size:20px}
+
+    /* grid + form */
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-6{grid-column:span 6} .col-12{grid-column:span 12}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .form-group{display:flex;flex-direction:column;gap:6px;position:relative}
+    .form-group label{font-weight:600;color:#444;font-size:14px}
+    .form-group input[type="text"],.form-group input[type="date"],.form-group input[type="url"],.form-group input[type="email"],.form-group select{
+      padding:14px 16px;border:1px solid #ddd;border-radius:12px;font-size:16px;background:#fff;min-height:44px
     }
+    .form-group input:focus,.form-group select:focus{outline:2px solid #5b9dd9;border-color:#5b9dd9}
+    .help-text{font-size:12px;color:#777}
+    .error-text{display:none;color:#b00020;font-size:12px}
+    .student-controls{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+    .student-controls select{flex:1;min-width:200px}
 
-    h1 {
-      margin: 0 0 var(--space-md);
-      text-align: center;
-      color: var(--blue);
-      font-size: clamp(1.75rem, 4vw, 2.5rem);
-      font-weight: 700;
-      letter-spacing: -0.025em;
+    .btn{background:var(--blue);color:#fff;border:0;border-radius:12px;padding:14px 18px;font-weight:700;cursor:pointer;transition:.15s transform,.2s background;min-height:44px}
+    .btn:hover{background:#1e3a8a;transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn.secondary{background:#eef2ff;color:#1e2a78;border:1px solid #dfe3ff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+
+    /* preview card */
+    .id-stage{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+    .id-card-wrapper{width:350px;aspect-ratio:85.6/54;position:relative;margin:12px auto 0}
+    .id-card-container{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s}
+    .id-card-container.flipped{transform:rotateY(180deg)}
+
+    /* FLEX COLUMN => footer pinned */
+    .face{
+      position:absolute; inset:0; background:#fff; border-radius:var(--radius);
+      box-shadow:0 4px 15px rgba(0,0,0,.18); overflow:hidden;
+      display:flex; flex-direction:column; backface-visibility:hidden;
     }
+    .back{transform:rotateY(180deg)}
+    .id-card-header,.body-front,.body-back,.footer{position:relative;z-index:1}
 
-    h2 {
-      margin: var(--space-xl) 0 var(--space-md);
-      color: var(--blue);
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: var(--space-sm);
-      font-size: clamp(1.25rem, 3vw, 1.5rem);
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
+    .id-card-header{
+      flex:0 0 40px; height:40px;
+      background:var(--blue); color:#fff; display:flex; align-items:center; gap:10px;
+      padding:8px 14px; border-bottom:3px solid var(--yellow)
     }
+    .id-card-header img.logo{width:28px;height:28px;border-radius:50%;object-fit:cover;background:#fff;flex-shrink:0}
+    .id-card-header h3{margin:0;font-weight:800;font-size:15px;letter-spacing:.3px}
 
-    h2::before {
-      content: "🎓";
-      font-size: 1.2em;
-    }
+    .body-front{flex:1 1 auto;min-height:0;padding:12px;display:flex;gap:12px;align-items:flex-start}
+    .body-back{flex:1 1 auto;min-height:0;padding:6mm;display:block;text-align:center}
+    .meta{font-size:3.2mm;line-height:1.3}
 
-    /* Main layout grid */
-    .main-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-xl);
-      margin-top: var(--space-lg);
-    }
+    .photo{width:74px;height:74px;border:2px solid var(--yellow);border-radius:10px;overflow:hidden;flex-shrink:0}
+    .photo img{width:100%;height:100%;object-fit:cover;object-position:center}
 
-    /* Form and controls */
-    .form-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-    }
+    .details{flex:1;min-width:0}
+    .details h4{margin:0 0 6px;font-size:13px;color:var(--blue);border-bottom:1px solid #eee;padding-bottom:4px;font-weight:800}
+    .kv{display:flex;gap:8px;margin:3px 0;font-size:11px;line-height:1.35}
+    .kv strong{color:var(--blue);min-width:92px}
+    .kv span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .kv.name span{font-weight:700}
+    .kv.name.long span{font-size:10px}
 
-    .student-controls {
-      display: flex;
-      gap: var(--space-sm);
-      align-items: center;
-      flex-wrap: wrap;
-      padding: var(--space-sm);
-      background: #f8fafc;
-      border-radius: var(--radius);
-      border: var(--border);
-    }
+    .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
 
-    .student-controls select {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--space-md);
-    }
-
-    .col-full { grid-column: 1 / -1; }
-
-    .row {
-      display: flex;
-      gap: var(--space-sm);
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-xs);
-      position: relative;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      color: #475569;
-      font-size: 0.875rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="date"],
-    .form-group input[type="url"],
-    .form-group input[type="email"],
-    .form-group select {
-      padding: var(--space-sm);
-      border: var(--border);
-      border-radius: var(--radius);
-      font-size: 1rem;
-      background: #fff;
-      transition: all 0.2s ease;
-      min-height: 44px; /* Touch-friendly */
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(13, 47, 111, 0.1);
-      transform: translateY(-1px);
-    }
-
-    .help-text {
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-top: 0.25rem;
-    }
-
-    .error-text {
-      display: none;
-      color: var(--red);
-      font-size: 0.75rem;
-      margin-top: 0.25rem;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: var(--space-sm);
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      margin-top: var(--space-md);
-    }
-
-    .btn {
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      padding: var(--space-sm) var(--space-md);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      text-decoration: none;
-    }
-
-    .btn:hover {
-      background: #1e3a8a;
-      transform: translateY(-1px);
-      box-shadow: var(--shadow);
-    }
-
-    .btn:active {
-      transform: translateY(0);
-    }
-
-    .btn.secondary {
-      background: #f1f5f9;
-      color: var(--blue);
-      border: var(--border);
-    }
-
-    .btn.secondary:hover {
-      background: #e2e8f0;
-      color: var(--blue);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-sm);
-      justify-content: center;
-      align-items: center;
-      margin: var(--space-md) 0;
-      padding: var(--space-sm);
-      background: #f8fafc;
-      border-radius: var(--radius);
-      border: var(--border);
-    }
-
-    .tools label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: #475569;
-      cursor: pointer;
-      padding: var(--space-xs) var(--space-sm);
-      border-radius: var(--radius);
-      transition: background 0.2s ease;
-      white-space: nowrap;
-    }
-
-    .tools label:hover {
-      background: #e2e8f0;
-    }
-
-    .tools input[type="checkbox"] {
-      margin: 0;
-    }
-
-    /* Preview section */
-    .preview-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-md);
-      background: #fff;
-      border-radius: var(--radius);
-      padding: var(--space-lg);
-      box-shadow: var(--shadow);
-    }
-
-    .id-stage {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: var(--space-sm);
-    }
-
-    .id-card-wrapper {
-      width: clamp(280px, 40vw, 400px);
-      aspect-ratio: 85.6 / 54;
-      position: relative;
-      margin: 0 auto;
-      perspective: 1000px;
-    }
-
-    .id-card-container {
-      position: absolute;
-      inset: 0;
-      transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    .id-card-container.flipped {
-      transform: rotateY(180deg);
-    }
-
-    .face {
-      position: absolute;
-      inset: 0;
-      background: #fff;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-lg);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      backface-visibility: hidden;
-      transform-style: preserve-3d;
-    }
-
-    .back {
-      transform: rotateY(180deg);
-    }
-
-    .id-card-header {
-      flex: 0 0 40px;
-      height: 40px;
-      background: var(--blue);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 14px;
-      border-bottom: 3px solid var(--yellow);
-    }
-
-    .id-card-header img.logo {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #fff;
-      flex-shrink: 0;
-    }
-
-    .id-card-header h3 {
-      margin: 0;
-      font-weight: 800;
-      font-size: 15px;
-      letter-spacing: 0.3px;
-    }
-
-    .body-front {
-      flex: 1 1 auto;
-      min-height: 0;
-      padding: 12px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .body-back {
-      flex: 1 1 auto;
-      min-height: 0;
-      padding: 6mm;
-      display: block;
-      text-align: center;
-    }
-
-    .meta {
-      font-size: 3.2mm;
-      line-height: 1.3;
-    }
-
-    .photo {
-      width: 74px;
-      height: 74px;
-      border: 2px solid var(--yellow);
-      border-radius: 10px;
-      overflow: hidden;
-      flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(249, 168, 37, 0.3);
-    }
-
-    .photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      transition: transform 0.3s ease;
-    }
-
-    .photo:hover img {
-      transform: scale(1.05);
-    }
-
-    .details {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .details h4 {
-      margin: 0 0 6px;
-      font-size: 13px;
-      color: var(--blue);
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 4px;
-      font-weight: 800;
-    }
-
-    .kv {
-      display: flex;
-      gap: 8px;
-      margin: 3px 0;
-      font-size: 11px;
-      line-height: 1.35;
-    }
-
-    .kv strong {
-      color: var(--blue);
-      min-width: 92px;
-      font-weight: 600;
-    }
-
-    .kv span {
-      flex: 1;
-      min-width: 0;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .kv.name span {
-      font-weight: 700;
-      color: var(--ink);
-    }
-
-    .kv.name.long span {
-      font-size: 10px;
-    }
-
-    .footer {
-      flex: 0 0 auto;
-      margin-top: auto;
-      background: var(--red);
-      color: #fff;
-      text-align: center;
-      font-weight: 600;
-      font-size: 9px;
-      padding: 6px 10px;
-      letter-spacing: 0.5px;
-    }
-
-    /* WATERMARK */
-    .wm {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .wm .crest {
-      max-width: 220px;
-      width: 65%;
-      filter: grayscale(100%);
-      opacity: var(--wm-opacity);
-    }
-
-    .wm .ring {
-      position: absolute;
-      width: 78%;
-      height: 78%;
-      border-radius: 50%;
-      border: 0.6mm solid var(--wm-ring);
-      opacity: 0.6;
-    }
-
-    .wm .script {
-      position: absolute;
-      left: -10%;
-      right: -10%;
-      top: 52%;
-      transform: rotate(-18deg) translateY(-50%);
-      text-align: center;
-      font-family: 'Great Vibes', cursive;
-      font-size: 24px;
-      letter-spacing: 0.05em;
-      color: var(--wm-script);
-      opacity: 0.75;
-      text-shadow: 0 0 1px rgba(0,0,0,.03);
+    /* WATERMARK — simple + attractive */
+    .wm{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0}
+    .wm .crest{max-width:220px; width:65%; filter:grayscale(100%); opacity:var(--wm-opacity)}
+    .wm .ring{position:absolute; width:78%; height:78%; border-radius:50%; border:.6mm solid var(--wm-ring); opacity:.6}
+    .wm .script{
+      position:absolute; left:-10%; right:-10%; top:52%;
+      transform:rotate(-18deg) translateY(-50%); text-align:center;
+      font-family:'Great Vibes', cursive; font-size:24px; letter-spacing:.05em;
+      color:var(--wm-script); opacity:.75; text-shadow:0 0 1px rgba(0,0,0,.03);
     }
 
     /* PRINTING LAYOUT */
-    #printPages { display: none; }
-    .print-page {
-      display: block;
-      width: var(--page-w);
-      height: var(--page-h);
-      position: relative;
-      margin: 0 auto;
-      page-break-after: always;
+    #printPages{display:none}
+    .print-page{display:block;width:var(--page-w);height:var(--page-h);position:relative;margin:0 auto;page-break-after:always}
+    .grid-surface{position:absolute;inset:0;display:grid;justify-content:center;align-content:start}
+    .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
+    .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
+
+    .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
+    .loading.active{display:flex;gap:8px}
+    .loading::before{content:"⏳"}
+
+    /* PRINT RULES (hide UI, show pages) */
+    @media print{
+      @page{size:auto;margin:0}
+      html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
+      body{background:#fff;padding:0;margin:0}
+      .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
+      #printPages{display:block !important}
+      .id-card-header{background-color:var(--blue) !important;color:#fff !important;border-bottom-color:var(--yellow) !important}
+      .footer{background-color:var(--red) !important;color:#fff !important}
     }
 
-    .grid-surface {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      justify-content: center;
-      align-content: start;
+    /* ===== MOBILE POLISH ===== */
+    @media (max-width:900px){
+      .container{padding:16px}
+      h1{font-size:22px}
+      h2{font-size:18px}
+      .btn{padding:14px 16px}
     }
 
-    .id-card-wrapper.print {
-      width: var(--card-w);
-      height: var(--card-h);
-    }
-
-    .face.print {
-      width: var(--card-w);
-      height: var(--card-h);
-      box-shadow: none;
-      border-radius: 2mm;
-      overflow: hidden;
-    }
-
-    .loading {
-      display: none;
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,.85);
-      color: #fff;
-      padding: var(--space-sm) var(--space-md);
-      border-radius: var(--radius);
-      z-index: 1000;
-      font-weight: 500;
-    }
-
-    .loading.active {
-      display: flex;
-      gap: var(--space-sm);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    .loading::before {
-      content: "⏳";
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .notes {
-      text-align: center;
-      font-size: 0.875rem;
-      color: #64748b;
-      margin-top: var(--space-md);
-      padding: var(--space-sm);
-      background: #f8fafc;
-      border-radius: var(--radius);
-      border-left: 4px solid var(--yellow);
-    }
-
-    /* PRINT RULES */
-    @media print {
-      @page { size: auto; margin: 0; }
-      html, body, * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; forced-color-adjust: none !important; }
-      body { background: #fff; padding: 0; margin: 0; }
-
-      .container, .id-stage, .tools, .form-section, .notes, .loading, h1, h2, .main-layout, .preview-section { display: none !important; }
-      #printPages { display: block !important; }
-
-      .id-card-header { background-color: var(--blue) !important; color: #fff !important; border-bottom-color: var(--yellow) !important; }
-      .footer { background-color: var(--red) !important; color: #fff !important; }
-    }
-
-    /* Mobile and responsive */
-    @media (max-width: 1024px) {
-      .main-layout {
-        grid-template-columns: 1fr;
-        gap: var(--space-lg);
+    @media (max-width:768px){
+      body{padding:12px}
+      .container{padding:14px}
+      .grid{grid-template-columns:1fr}
+      .col-6,.col-12{grid-column:span 1}
+      /* make buttons full-width by default on mobile */
+      .btn{width:100%}
+      /* tools: sticky bottom bar */
+      .tools{
+        position:sticky; bottom:0; z-index:20;
+        background:#fff; padding:10px; border-radius:12px;
+        box-shadow:0 -6px 18px rgba(0,0,0,.06);
+        margin-top:12px;
       }
-
-      .preview-section {
-        order: -1; /* Preview above form on small screens */
-      }
-
-      .tools {
-        justify-content: flex-start;
-      }
+      .tools > *{flex:1; min-width:calc(50% - 8px)}
+      .tools select{width:100%; min-height:44px}
+      .tools label.btn{width:100%}
+      .tools label[style]{gap:.4rem !important}
+      /* card preview scales to screen width */
+      .id-card-wrapper{width:var(--mobile-max-card)}
+      .id-card-header h3{font-size:13.5px}
+      .details h4{font-size:12px}
+      .kv{font-size:10.5px}
+      .footer{font-size:8.5px}
+      .photo{width:68px;height:68px}
+      /* safe area padding for iOS bottom bar */
+      .tools{padding-bottom:calc(10px + var(--safe-bottom))}
     }
 
-    @media (max-width: 768px) {
-      body { padding: clamp(0.75rem, 3vw, 1rem); }
-      .container { padding: var(--space-md); }
-      .grid { grid-template-columns: 1fr; gap: var(--space-sm); }
-      .btn, .tools label { width: 100%; justify-content: center; }
-      .student-controls { flex-direction: column; align-items: stretch; }
-      .student-controls select { min-width: auto; }
-      .form-actions { flex-direction: column; }
-      .id-card-wrapper { max-width: 90vw; }
-      .id-card-header h3 { font-size: 14px; }
-      .kv { font-size: 10px; }
-      .footer { font-size: 8px; }
-      .tools { flex-direction: column; align-items: stretch; }
-    }
-
-    @media (max-width: 480px) {
-      h1 { font-size: 1.5rem; }
-      h2 { font-size: 1.125rem; }
-      .photo { width: 60px; height: 60px; }
-      .details h4 { font-size: 12px; }
-    }
-
-    /* Dark mode support (optional enhancement) */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f172a;
-        --ink: #f1f5f9;
-      }
-      body { background: linear-gradient(135deg, var(--bg) 0%, #1e293b 100%); }
-      .container { background: #1e293b; }
-      .form-group input, .form-group select { background: #334155; border-color: #475569; color: #f1f5f9; }
-      .student-controls, .tools, .notes { background: #334155; border-color: #475569; color: #f1f5f9; }
-      .kv strong { color: #60a5fa; }
+    /* ultra-small phones (≤380px) */
+    @media (max-width:380px){
+      .id-card-wrapper{width:min(94vw, 380px)}
+      .id-card-header h3{font-size:12.5px}
+      .kv{font-size:10px}
+      .photo{width:64px;height:64px}
+      .details h4{font-size:11.5px}
     }
   </style>
 </head>
@@ -644,155 +193,155 @@
   <div class="container" aria-live="polite">
     <h1>Great Landmark College ID Card Generator</h1>
 
-    <div class="main-layout">
-      <section class="form-section">
-        <h2>Enter Student Details</h2>
-        <div class="student-controls">
-          <div class="form-group" style="flex: 1;">
-            <label for="studentSelect">Select Student</label>
-            <select id="studentSelect"></select>
-          </div>
-          <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
-          <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove</button>
+    <!-- FORM -->
+    <div class="form-section">
+      <h2>Enter Student Details</h2>
+      <div class="student-controls">
+        <div class="form-group">
+          <label for="studentSelect">Select Student</label>
+          <select id="studentSelect"></select>
         </div>
+        <button class="btn secondary" id="addStudentBtn" type="button">Add Student</button>
+        <button class="btn secondary" id="removeStudentBtn" type="button" disabled>Remove Selected</button>
+      </div>
 
-        <form id="form" novalidate>
-          <div class="grid">
-            <div>
-              <div class="form-group">
-                <label for="studentName">👤 Student Name</label>
-                <input id="studentName" type="text" required value="ADEKUNLE SAMUEL"/>
-                <div class="error-text" id="errName">Please enter a name.</div>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="dob">📅 Date of Birth (DOB)</label>
-                <input id="dob" type="date" required/>
-                <div class="error-text" id="errDob">Please enter a valid date.</div>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="admissionNo">🆔 Admission No</label>
-                <input id="admissionNo" type="text" required placeholder="GLC/2025/001" pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
-                <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="klass">🏫 Class</label>
-                <input id="klass" type="text" required value="SS1 A"/>
-                <div class="error-text" id="errClass">Please enter a class.</div>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="gender">⚧️ Gender</label>
-                <select id="gender" required>
-                  <option>Male</option><option>Female</option><option>Other</option>
-                </select>
-                <div class="error-text" id="errGender">Please select a gender.</div>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="validForYears">📊 Valid For</label>
-                <select id="validForYears">
-                  <option value="1" selected>1 year</option>
-                  <option value="2">2 years</option>
-                  <option value="3">3 years</option>
-                  <option value="4">4 years</option>
-                  <option value="5">5 years</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="col-full">
-              <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer;">
-                <input type="checkbox" id="showGender" checked> 👤 Show Gender on card
-              </label>
-            </div>
-
-            <div class="col-full">
-              <div class="form-group">
-                <label for="photoUrl">📸 Student Photo URL</label>
-                <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg" value="https://via.placeholder.com/300x300?text=Student"/>
-                <div class="row">
-                  <input id="photoFile" type="file" accept="image/*,image/heic,image/heif" style="flex: 1;"/>
-                  <span class="help-text">Upload overrides URL. Auto-cropped & compressed.</span>
-                </div>
-                <div class="error-text" id="errPhoto"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="phone">📞 Phone</label>
-                <input id="phone" type="text" value="+234 801 123 4567"/>
-              </div>
-            </div>
-
-            <div>
-              <div class="form-group">
-                <label for="email">✉️ Email</label>
-                <input id="email" type="email" value="info@greatlandmarkcollege.org"/>
-              </div>
-            </div>
-
-            <div class="col-full">
-              <div class="form-group">
-                <label for="address">🏠 Address</label>
-                <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure"/>
-              </div>
-            </div>
-
-            <div class="col-full form-actions">
-              <button class="btn" type="submit">🔄 Update Preview</button>
-              <button class="btn secondary" type="button" id="resetBtn">↩️ Reset</button>
+      <form id="form" novalidate>
+        <div class="grid">
+          <div class="col-6">
+            <div class="form-group">
+              <label for="studentName">Student Name</label>
+              <input id="studentName" type="text" required value="ADEKUNLE SAMUEL"/>
+              <div class="error-text" id="errName">Please enter a name.</div>
             </div>
           </div>
-        </form>
-      </section>
 
-      <section class="preview-section">
-        <h2>Preview</h2>
-        <div class="tools">
-          <button class="btn secondary" id="flipBtn" type="button">🔄 Flip Card</button>
-          <button class="btn secondary" id="printFrontsBtn" type="button">🖨️ Print Fronts</button>
-          <button class="btn secondary" id="printBacksBtn" type="button">🖨️ Print Backs</button>
+          <div class="col-6">
+            <div class="form-group">
+              <label for="dob">Date of Birth (DOB)</label>
+              <input id="dob" type="date" required/>
+              <div class="error-text" id="errDob">Please enter a valid date.</div>
+            </div>
+          </div>
 
-          <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center; min-width: auto;">
-            📄 Paper
-            <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
-          </label>
-          <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center; min-width: auto;">
-            🔗 Duplex (Edge)
-            <select id="duplexMode"><option value="long" selected>Long-edge</option><option value="short">Short-edge</option></select>
-          </label>
-          <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center; min-width: auto;">
-            🎯 Cards / Sheet
-            <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
-          </label>
-          <label style="display:flex;align-items:center;font-size:14px;color:#444;gap:.4rem; order: 3; width: 100%; justify-content: center;">
-            <input type="checkbox" id="imageMode"> 🖼️ Render as images
-          </label>
-          <label style="display:flex;align-items:center;font-size:14px;color:#444;gap:.4rem; order: 4; width: 100%; justify-content: center;">
-            <input type="checkbox" id="mirrorBack"> 🔄 Reverse left-right (back)
-          </label>
+          <div class="col-6">
+            <div class="form-group">
+              <label for="admissionNo">Admission No</label>
+              <input id="admissionNo" type="text" required placeholder="GLC/2025/001" pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
+              <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="klass">Class</label>
+              <input id="klass" type="text" required value="SS1 A"/>
+              <div class="error-text" id="errClass">Please enter a class.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="gender">Gender</label>
+              <select id="gender" required>
+                <option>Male</option><option>Female</option><option>Other</option>
+              </select>
+              <div class="error-text" id="errGender">Please select a gender.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="validForYears">Valid For</label>
+              <select id="validForYears">
+                <option value="1" selected>1 year</option>
+                <option value="2">2 years</option>
+                <option value="3">3 years</option>
+                <option value="4">4 years</option>
+                <option value="5">5 years</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label><input type="checkbox" id="showGender" checked> Show Gender on card</label>
+          </div>
+
+          <div class="col-12">
+            <div class="form-group">
+              <label for="photoUrl">Student Photo URL</label>
+              <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg" value="https://via.placeholder.com/300x300?text=Student"/>
+              <div class="row">
+                <input id="photoFile" type="file" accept="image/*,image/heic,image/heif"/>
+                <span class="help-text">Upload overrides URL. Auto-cropped & compressed.</span>
+              </div>
+              <div class="error-text" id="errPhoto"></div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input id="phone" type="text" value="+234 801 123 4567"/>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input id="email" type="email" value="info@greatlandmarkcollege.org"/>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="form-group">
+              <label for="address">Address</label>
+              <input id="address" type="text" value="45, Oke Alaro Rd, Abusoro, Akure"/>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="row" style="gap:12px">
+              <button class="btn" type="submit">Update Preview</button>
+              <button class="btn secondary" type="button" id="resetBtn">Reset</button>
+            </div>
+          </div>
         </div>
+      </form>
 
-        <div class="id-stage" id="idStage"></div>
-        <p class="notes" id="pageNote">💡 Tip: Print fronts first, then backs. Use Long-edge for duplex printers. Enable “Reverse left-right” if backs are mirrored.</p>
-      </section>
+      <div class="loading">Processing…</div>
     </div>
 
-    <div class="loading">Processing…</div>
+    <!-- OUTPUT -->
+    <h2>Generated ID Card (Current Student)</h2>
+
+    <!-- Sticky tools on mobile -->
+    <div class="tools" id="toolsBar">
+      <button class="btn secondary" id="flipBtn" type="button">Flip</button>
+      <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
+      <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
+
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Paper
+        <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
+      </label>
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Duplex (Edge)
+        <select id="duplexMode"><option value="long" selected>Long-edge (rotate 180°)</option><option value="short">Short-edge (0°)</option></select>
+      </label>
+      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
+        Cards / sheet
+        <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
+      </label>
+      <label style="display:flex;align-items:center;font-size:14px;color:#444;gap:.4rem">
+        <input type="checkbox" id="imageMode"> Render as images
+      </label>
+      <label style="display:flex;align-items:center;font-size:14px;color:#444;gap:.4rem">
+        <input type="checkbox" id="mirrorBack"> Reverse left-right (back)
+      </label>
+    </div>
+
+    <div class="id-stage" id="idStage"></div>
+    <p class="notes" id="pageNote">Tip: Print fronts, then backs. Use Long-edge for most duplex printers. If your printer mirrors the back, tick “Reverse left-right (back)”.</p>
   </div>
 
   <script>
@@ -966,7 +515,7 @@
           </div>
         </div>`;
 
-      await buildPrintPages('front'); // keep preview and print pages in sync
+      await buildPrintPages('front'); // keep preview & print pages in sync
       return ok;
     }
 
@@ -1062,8 +611,8 @@
     function backTransform(){
       const mode = els.tools.duplexMode.value; // 'long' or 'short'
       const mirror = els.tools.mirrorBack.checked;
-      if (mirror) return 'scaleX(-1)';           // real mirror fix (rare)
-      return (mode==='long') ? 'rotate(180deg)' : 'none'; // typical duplex alignment
+      if (mirror) return 'scaleX(-1)';
+      return (mode==='long') ? 'rotate(180deg)' : 'none';
     }
 
     async function buildPrintPages(side='front'){
@@ -1107,10 +656,8 @@
       }
     }
 
-    /* print helpers */
     async function doPrint(side){
-      await buildPrintPages(side);  // only the requested side exists => zero confusion
-      // Give layout a tick before opening the dialog
+      await buildPrintPages(side);
       requestAnimationFrame(()=>{ setTimeout(()=>window.print(), 50); });
     }
 
@@ -1169,9 +716,19 @@
 
       els.fields.studentSelect.addEventListener('change',(e)=>{idx=parseInt(e.target.value,10); loadForm(); updatePreview();});
 
-      // PRINT buttons: build only that side; no CSS mode classes anymore
+      // PRINT buttons
       els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
       els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
+
+      // Mobile nicety: auto-scroll card into view after updates
+      const stage = document.getElementById('idStage');
+      const scrollIntoViewIfMobile = () => {
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          stage.scrollIntoView({behavior:'smooth', block:'center'});
+        }
+      };
+      els.form.addEventListener('change', scrollIntoViewIfMobile);
+      els.tools.flipBtn.addEventListener('click', scrollIntoViewIfMobile);
     }
 
     (async function init(){
