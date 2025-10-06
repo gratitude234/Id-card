@@ -22,6 +22,11 @@
 
       /* true card size */
       --card-w:85.6mm; --card-h:54mm;
+
+      /* watermark tuning */
+      --wm-opacity: .09;
+      --wm-ring: rgba(13,47,111,.08);
+      --wm-script: rgba(13,47,111,.12);
     }
 
     *{box-sizing:border-box}
@@ -72,7 +77,7 @@
     }
     .back{transform:rotateY(180deg)}
 
-    /* main sections stay above watermark */
+    /* main sections above watermark */
     .id-card-header,.body-front,.body-back,.footer{position:relative;z-index:1}
 
     .id-card-header{
@@ -100,16 +105,31 @@
 
     .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
 
-    /* WATERMARK (crest + diagonal text) */
+    /* WATERMARK — simple + attractive */
     .wm{
       position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
       pointer-events:none; z-index:0;
     }
-    .wm img{max-width:240px;width:70%;filter:grayscale(100%);opacity:.10}
-    .wm span{
-      position:absolute; font-weight:800; letter-spacing:.25em;
-      color:#0d2f6f; opacity:.10; font-size:24px; transform:rotate(-24deg);
-      text-shadow:0 0 1px rgba(0,0,0,.05);
+    .wm .crest{
+      max-width:220px; width:65%;
+      filter:grayscale(100%);
+      opacity:var(--wm-opacity);
+    }
+    .wm .ring{
+      position:absolute; width:78%; height:78%;
+      border-radius:50%;
+      border:.6mm solid var(--wm-ring);
+      opacity:.6; /* very soft */
+    }
+    .wm .script{
+      position:absolute; left:-10%; right:-10%; top:52%;
+      transform:rotate(-18deg) translateY(-50%);
+      text-align:center;
+      font-family:'Great Vibes', cursive;
+      font-size:24px; letter-spacing:.05em;
+      color:var(--wm-script);
+      opacity:.75;
+      text-shadow:0 0 1px rgba(0,0,0,.03);
     }
 
     /* PRINTING LAYOUT */
@@ -136,7 +156,7 @@
       /* SHOW print host + pages */
       #printPages{display:block !important}
 
-      /* by default print fronts if no mode set */
+      /* default: fronts if no class */
       .front-surface{display:grid}
       .back-surface{display:none}
 
@@ -166,7 +186,7 @@
 </head>
 <body>
 
-  <!-- ======= PRINT HOST (moved OUTSIDE .container so it is not hidden in @media print) ======= -->
+  <!-- PRINT HOST lives OUTSIDE .container so it’s not hidden in @media print -->
   <div id="printPages" role="presentation"></div>
 
   <div class="container" aria-live="polite">
@@ -320,17 +340,9 @@
 
   <script>
   (function(){
-    const INLINE_LOGO =
-      "data:image/svg+xml;utf8," +
-      "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'>" +
-      "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='%230d2f6f'/>" +
-      "<stop offset='100%' stop-color='%23f9a825'/></linearGradient></defs>" +
-      "<rect width='100%' height='100%' rx='24' fill='url(%23g)'/>" +
-      "<text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial' font-size='96' font-weight='700'>GLC</text></svg>";
-
     const CONFIG={
       defaultPhoto:'https://via.placeholder.com/300x300?text=Student',
-      defaultLogo: INLINE_LOGO,
+      defaultLogo:'/glc-logo.jpg', // <-- your actual logo file (same-origin)
       captureScale:2
     };
 
@@ -388,7 +400,7 @@
     function sanitize(s){return String(s||'').replace(/[<>&"']/g,c=>'&#'+c.charCodeAt(0)+';')}
     function showErr(el,on,msg){if(!el)return; el.style.display=on?'block':'none'; if(msg)el.textContent=msg;}
     function normalizeClass(s){return s.replace(/\b([A-Za-z]+)\s+(\d)/g,'$1$2').replace(/\s+/g,' ').trim()}
-    async function preload(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>res();i.onerror=()=>rej();i.src=src;});}
+    async function preload(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res();i.onerror=()=>rej();i.src=src;});}
     async function fileToDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});}
     async function resizeImage(file,max=360){
       const data=await fileToDataUrl(file); const img=new Image(); img.src=data;
@@ -403,6 +415,7 @@
       els.fields.studentSelect.value = idx;
       const per = Number(els.tools.cardsPerPage.value); const pages=Math.ceil(students.length/per)||1;
       els.note.textContent = `${students.length} card${students.length!==1?'s':''} • ${per} per sheet • about ${pages} page${pages!==1?'s':''}.`;
+      els.tools.removeStudentBtn.disabled = students.length<=1;
     }
 
     function loadForm(){
@@ -449,8 +462,9 @@
           <div class="id-card-container" id="card-${idx}">
             <section class="face front" aria-hidden="false">
               <div class="wm">
-                <img src="${CONFIG.defaultLogo}" alt="" />
-                <span>GREAT LANDMARK COLLEGE</span>
+                <img class="crest" src="${CONFIG.defaultLogo}" alt="">
+                <div class="ring" aria-hidden="true"></div>
+                <div class="script">Great Landmark College</div>
               </div>
               <header class="id-card-header">
                 <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" loading="eager"/>
@@ -472,8 +486,9 @@
 
             <section class="face back" aria-hidden="true">
               <div class="wm">
-                <img src="${CONFIG.defaultLogo}" alt=""/>
-                <span>GREAT LANDMARK COLLEGE</span>
+                <img class="crest" src="${CONFIG.defaultLogo}" alt="">
+                <div class="ring" aria-hidden="true"></div>
+                <div class="script">Great Landmark College</div>
               </div>
               <header class="id-card-header">
                 <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" loading="eager"/>
@@ -498,12 +513,21 @@
     }
 
     /* Print page builders */
+    function wmBlock(){
+      return `
+        <div class="wm">
+          <img class="crest" src="${CONFIG.defaultLogo}" alt="">
+          <div class="ring" aria-hidden="true"></div>
+          <div class="script">Great Landmark College</div>
+        </div>`;
+    }
+
     function htmlFrontCard(s){
       const longName=(s.name||'').length>24;
       const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
       wrap.innerHTML=`<div class="id-card-container">
         <section class="face print">
-          <div class="wm"><img src="${CONFIG.defaultLogo}" alt=""/><span>GREAT LANDMARK COLLEGE</span></div>
+          ${wmBlock()}
           <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
           <div class="body-front">
             <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo"></div>
@@ -521,11 +545,12 @@
       </div>`;
       return wrap;
     }
+
     function htmlBackCard(s){
       const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
       wrap.innerHTML=`<div class="id-card-container">
         <section class="face print">
-          <div class="wm"><img src="${CONFIG.defaultLogo}" alt=""/><span>GREAT LANDMARK COLLEGE</span></div>
+          ${wmBlock()}
           <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
           <div class="body-back">
             <div class="meta">
@@ -552,7 +577,6 @@
       const out=[];
       for(let i=0;i<students.length;i++){
         const s=students[i];
-
         try{
           tmp.innerHTML=''; tmp.appendChild(htmlFrontCard(s));
           await document.fonts.ready;
@@ -566,7 +590,6 @@
 
           out.push({front,back});
         }catch(e){
-          // Fallback: if images taint canvas, disable image mode and bail out
           els.tools.imageMode.checked=false;
           document.body.removeChild(tmp);
           els.loading.classList.remove('active');
@@ -588,9 +611,7 @@
       let images=null;
       if(useImages){
         images=await renderAllToImages();
-        if(!images){ /* fallback already toggled off; rebuild in HTML mode */
-          return buildPrintPages();
-        }
+        if(!images){ return buildPrintPages(); } // fallback to HTML mode if tainted
       }
 
       for(let i=0;i<students.length;i+=per){
@@ -626,11 +647,10 @@
       }
     }
 
-    /* robust print triggers using body classes */
+    /* print triggers using body classes */
     function printMode(which){
       document.body.classList.remove('print-fronts','print-backs');
       document.body.classList.add(which==='front'?'print-fronts':'print-backs');
-      // ensure layout applied before print dialog opens
       requestAnimationFrame(()=>{ setTimeout(()=>window.print(), 50); });
     }
     window.addEventListener('afterprint', ()=>{ document.body.classList.remove('print-fronts','print-backs'); });
@@ -692,15 +712,9 @@
 
       els.fields.studentSelect.addEventListener('change',(e)=>{idx=parseInt(e.target.value,10); loadForm(); updatePreview();});
 
-      // PRINT BUTTONS: rebuild pages right before triggering print to avoid stale/blank output
-      els.tools.printFrontsBtn.addEventListener('click', async ()=>{
-        await buildPrintPages();
-        printMode('front');
-      });
-      els.tools.printBacksBtn.addEventListener('click',  async ()=>{
-        await buildPrintPages();
-        printMode('back');
-      });
+      // rebuild pages right before printing
+      els.tools.printFrontsBtn.addEventListener('click', async ()=>{ await buildPrintPages(); printMode('front'); });
+      els.tools.printBacksBtn.addEventListener('click',  async ()=>{ await buildPrintPages(); printMode('back');  });
     }
 
     (async function init(){
