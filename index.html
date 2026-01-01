@@ -47,7 +47,7 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .form-group{display:flex;flex-direction:column;gap:6px;position:relative}
     .form-group label{font-weight:600;color:#444;font-size:14px}
-    .form-group input[type="text"],.form-group input[type="date"],.form-group input[type="url"],.form-group input[type="email"],.form-group select{
+    .form-group input[type="text"],.form-group input[type="date"],.form-group input[type="url"],.form-group input[type="email"],.form-group input[type="number"],.form-group select{
       padding:var(--pad);border:1px solid #ddd;border-radius:10px;font-size:16px;background:#fff
     }
     .form-group input:focus,.form-group select:focus{outline:2px solid #5b9dd9;border-color:#5b9dd9}
@@ -108,7 +108,7 @@
 
     .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
 
-    /* WATERMARK — simple + attractive */
+    /* WATERMARK */
     .wm{
       position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
       pointer-events:none; z-index:0;
@@ -136,16 +136,16 @@
     }
 
     /* PRINTING LAYOUT */
-    #printPages{display:none} /* hidden on screen */
+    #printPages{display:none}
     .print-page{display:block;width:var(--page-w);height:var(--page-h);position:relative;margin:0 auto;page-break-after:always}
 
-    /* ✅ FIX: center the sheet so rotating 180deg does NOT shift positions */
+    /* ✅ center sheet so back rotation aligns */
     .grid-surface{
       position:absolute;
       inset:0;
       display:grid;
-      place-content:center;      /* centers horizontally + vertically */
-      transform-origin:center;   /* rotation stays anchored */
+      place-content:center;
+      transform-origin:center;
     }
 
     .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
@@ -155,30 +155,25 @@
     .loading.active{display:flex;gap:8px}
     .loading::before{content:"⏳"}
 
-    /* PRINT RULES (hide UI, show pages) */
     @media print{
       @page{size:auto;margin:0}
       html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
       body{background:#fff;padding:0;margin:0}
 
-      /* slightly strengthen watermark ONLY for print so it actually shows on paper */
+      /* strengthen watermark for paper */
       :root{
         --wm-opacity: .18;
         --wm-ring: rgba(13,47,111,.14);
         --wm-script: rgba(13,47,111,.18);
       }
 
-      /* hide app chrome */
       .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
-
-      /* show print host */
       #printPages{display:block !important}
 
       .id-card-header{background-color:var(--blue) !important;color:#fff !important;border-bottom-color:var(--yellow) !important}
       .footer{background-color:var(--red) !important;color:#fff !important}
     }
 
-    /* ===== Mobile refinements ===== */
     @media (max-width:768px){
       body{padding:12px}
       .container{padding:16px}
@@ -186,26 +181,20 @@
       .grid{grid-template-columns:1fr}
       .col-6,.col-12{grid-column:span 1}
 
-      /* Make student controls stack cleanly */
       .student-controls{
         display:grid;
         grid-template-columns:1fr;
         gap:8px;
         align-items:stretch;
       }
-      .student-controls .form-group{margin:0}
       .student-controls select{min-width:0;width:100%}
       .student-controls .btn{width:100%}
 
-      /* Only form buttons go full width on mobile */
       .form-section .row .btn{width:100%}
 
-      /* Keep toolbar tidy; don't stretch those buttons */
       .tools .btn,
       .tools label.btn{width:auto}
-      .tools label{gap:.5rem}
 
-      /* Tighten card on small screens */
       .id-card-wrapper{max-width:360px}
       .id-card-header h3{font-size:14px}
       .kv{font-size:10px}
@@ -215,15 +204,14 @@
 </head>
 <body>
 
-  <!-- PRINT HOST lives OUTSIDE .container so it’s not hidden in @media print -->
   <div id="printPages" role="presentation"></div>
 
   <div class="container" aria-live="polite">
     <h1>Great Landmark College ID Card Generator</h1>
 
-    <!-- FORM -->
     <div class="form-section">
       <h2>Enter Student Details</h2>
+
       <div class="student-controls">
         <div class="form-group">
           <label for="studentSelect">Select Student</label>
@@ -277,16 +265,24 @@
             </div>
           </div>
 
+          <!-- ✅ NEW: Expiration as TERM + SESSION -->
           <div class="col-6">
             <div class="form-group">
-              <label for="validForYears">Valid For</label>
-              <select id="validForYears">
-                <option value="1" selected>1 year</option>
-                <option value="2">2 years</option>
-                <option value="3">3 years</option>
-                <option value="4">4 years</option>
-                <option value="5">5 years</option>
+              <label for="expTerm">Expiry Term</label>
+              <select id="expTerm">
+                <option value="1st">1st Term</option>
+                <option value="2nd">2nd Term</option>
+                <option value="3rd" selected>3rd Term</option>
               </select>
+              <div class="help-text">This prints as “Valid Until: 3rd Term 2025/2026”.</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="form-group">
+              <label for="sessionStart">Session Start Year</label>
+              <input id="sessionStart" type="number" min="2000" max="2100" step="1" />
+              <div class="help-text" id="sessionHint"></div>
             </div>
           </div>
 
@@ -339,7 +335,6 @@
       <div class="loading">Processing…</div>
     </div>
 
-    <!-- OUTPUT -->
     <h2>Generated ID Card (Current Student)</h2>
     <div class="tools">
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
@@ -374,7 +369,7 @@
   (function(){
     const CONFIG={
       defaultPhoto:'https://via.placeholder.com/300x300?text=Student',
-      defaultLogo:'./glc-logo.jpg', // ✅ safer than "/glc-logo.jpg" when hosted in folders or opened locally
+      defaultLogo:'./glc-logo.jpg',
       captureScale:2
     };
 
@@ -384,6 +379,7 @@
       printPages:document.getElementById('printPages'),
       loading:document.querySelector('.loading'),
       note:document.getElementById('pageNote'),
+      sessionHint:document.getElementById('sessionHint'),
       tools:{
         flipBtn:document.getElementById('flipBtn'),
         printFrontsBtn:document.getElementById('printFrontsBtn'),
@@ -402,7 +398,8 @@
         adm:document.getElementById('admissionNo'),
         klass:document.getElementById('klass'),
         gender:document.getElementById('gender'),
-        validForYears:document.getElementById('validForYears'),
+        expTerm:document.getElementById('expTerm'),
+        sessionStart:document.getElementById('sessionStart'),
         showGender:document.getElementById('showGender'),
         photoUrl:document.getElementById('photoUrl'),
         photoFile:document.getElementById('photoFile'),
@@ -421,15 +418,6 @@
       }
     };
 
-    let students=[{
-      name:'ADEKUNLE SAMUEL', dob:'', adm:'GLC/2025/001', klass:'SS1 A', gender:'Male', showGender:true,
-      validForYears:1, validUntil:futureDate(1), photo:CONFIG.defaultPhoto,
-      phone:'+234 801 123 4567', email:'info@greatlandmarkcollege.org', address:'45, Oke Alaro Rd, Abusoro, Akure'
-    }];
-    let idx=0;
-
-    /* helpers */
-    function futureDate(years){const d=new Date();d.setFullYear(d.getFullYear()+years);return d.toISOString().split('T')[0]}
     function sanitize(s){return String(s||'').replace(/[<>&"']/g,c=>'&#'+c.charCodeAt(0)+';')}
     function showErr(el,on,msg){if(!el)return; el.style.display=on?'block':'none'; if(msg!==undefined) el.textContent=msg;}
     function normalizeClass(s){return s.replace(/\b([A-Za-z]+)\s+(\d)/g,'$1$2').replace(/\s+/g,' ').trim()}
@@ -454,41 +442,29 @@
       return Promise.all(imgs.map(img => (
         img.complete ? Promise.resolve() : new Promise(res => {
           img.onload = res;
-          img.onerror = res; // don't block forever
+          img.onerror = res;
         })
       )));
     }
 
-    function updateSelect(){
-      els.fields.studentSelect.innerHTML = students.map((s,i)=>`<option value="${i}">Student ${i+1}${s.name?`: ${s.name}`:''}</option>`).join('');
-      els.fields.studentSelect.value = idx;
-      const per = Number(els.tools.cardsPerPage.value); const pages=Math.ceil(students.length/per)||1;
-      els.note.textContent = `${students.length} card${students.length!==1?'s':''} • ${per} per sheet • about ${pages} page${pages!==1?'s':''}.`;
-      els.tools.removeStudentBtn.disabled = students.length<=1;
+    function currentSessionStartYear(){
+      // Typical NG academic session: roughly Sep -> Aug
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = now.getMonth() + 1; // 1-12
+      return (m >= 9) ? y : (y - 1);
     }
 
-    function loadForm(){
-      const s=students[idx];
-      els.fields.name.value=s.name||''; els.fields.dob.value=s.dob||''; els.fields.adm.value=s.adm||'';
-      els.fields.klass.value=s.klass||''; els.fields.gender.value=s.gender||'Male';
-      els.fields.validForYears.value=s.validForYears||1; els.fields.showGender.checked=s.showGender!==false;
-      els.fields.photoUrl.value=(s.photo&&s.photo.startsWith('http'))?s.photo:''; els.fields.photoFile.value='';
-      els.fields.phone.value=s.phone||''; els.fields.email.value=s.email||''; els.fields.address.value=s.address||'';
+    function sessionLabel(startYear){
+      const sy = Number(startYear);
+      if (!Number.isFinite(sy) || sy < 2000) return '';
+      return `${sy}/${sy+1}`;
     }
 
-    function readFormIntoState(){
-      const s=students[idx];
-      s.name=els.fields.name.value.trim();
-      s.dob=els.fields.dob.value;
-      s.adm=els.fields.adm.value.trim();
-      s.klass=normalizeClass(els.fields.klass.value.trim());
-      s.gender=els.fields.gender.value;
-      s.validForYears=parseInt(els.fields.validForYears.value||'1',10);
-      s.validUntil=futureDate(s.validForYears);
-      s.showGender=els.fields.showGender.checked;
-      s.phone=els.fields.phone.value.trim();
-      s.email=els.fields.email.value.trim();
-      s.address=els.fields.address.value.trim();
+    function expiryLabel(s){
+      const term = s.expTerm || '3rd';
+      const ses = sessionLabel(s.sessionStart);
+      return ses ? `${term} Term ${ses}` : `${term} Term`;
     }
 
     function validField(input,errEl,pattern){
@@ -498,8 +474,91 @@
       return ok;
     }
 
+    // ---------- STATE ----------
+    let students=[{
+      name:'ADEKUNLE SAMUEL',
+      dob:'',
+      adm:'GLC/2025/001',
+      klass:'SS1 A',
+      gender:'Male',
+      showGender:true,
+
+      // ✅ NEW expiry fields
+      expTerm:'3rd',
+      sessionStart: currentSessionStartYear(),
+
+      photo:CONFIG.defaultPhoto,
+      phone:'+234 801 123 4567',
+      email:'info@greatlandmarkcollege.org',
+      address:'45, Oke Alaro Rd, Abusoro, Akure'
+    }];
+    let idx=0;
+
+    function updateSelect(){
+      els.fields.studentSelect.innerHTML = students.map((st,i)=>`<option value="${i}">Student ${i+1}${st.name?`: ${st.name}`:''}</option>`).join('');
+      els.fields.studentSelect.value = idx;
+
+      const per = Number(els.tools.cardsPerPage.value);
+      const pages=Math.ceil(students.length/per)||1;
+      els.note.textContent = `${students.length} card${students.length!==1?'s':''} • ${per} per sheet • about ${pages} page${pages!==1?'s':''}.`;
+      els.tools.removeStudentBtn.disabled = students.length<=1;
+    }
+
+    function updateSessionHint(){
+      const sy = Number(els.fields.sessionStart.value);
+      const label = sessionLabel(sy);
+      els.sessionHint.textContent = label ? `Session will display as: ${label}` : `Enter a valid start year (e.g. 2025).`;
+    }
+
+    function loadForm(){
+      const s=students[idx];
+      els.fields.name.value=s.name||'';
+      els.fields.dob.value=s.dob||'';
+      els.fields.adm.value=s.adm||'';
+      els.fields.klass.value=s.klass||'';
+      els.fields.gender.value=s.gender||'Male';
+      els.fields.showGender.checked=s.showGender!==false;
+
+      els.fields.expTerm.value = s.expTerm || '3rd';
+      els.fields.sessionStart.value = String(s.sessionStart ?? currentSessionStartYear());
+      updateSessionHint();
+
+      els.fields.photoUrl.value=(s.photo&&s.photo.startsWith('http'))?s.photo:'';
+      els.fields.photoFile.value='';
+      els.fields.phone.value=s.phone||'';
+      els.fields.email.value=s.email||'';
+      els.fields.address.value=s.address||'';
+    }
+
+    function readFormIntoState(){
+      const s=students[idx];
+      s.name=els.fields.name.value.trim();
+      s.dob=els.fields.dob.value;
+      s.adm=els.fields.adm.value.trim();
+      s.klass=normalizeClass(els.fields.klass.value.trim());
+      s.gender=els.fields.gender.value;
+      s.showGender=els.fields.showGender.checked;
+
+      s.expTerm = els.fields.expTerm.value;
+      s.sessionStart = Number(els.fields.sessionStart.value || currentSessionStartYear());
+
+      s.phone=els.fields.phone.value.trim();
+      s.email=els.fields.email.value.trim();
+      s.address=els.fields.address.value.trim();
+    }
+
+    function wmBlock(){
+      return `
+        <div class="wm">
+          <img class="crest" src="${CONFIG.defaultLogo}" alt="">
+          <div class="ring" aria-hidden="true"></div>
+          <div class="script">Great Landmark College</div>
+        </div>`;
+    }
+
     function updatePreview(){
       readFormIntoState();
+
       const ok=[
         validField(els.fields.name,els.errors.name),
         validField(els.fields.dob,els.errors.dob),
@@ -510,16 +569,13 @@
 
       const s=students[idx];
       const longName=(s.name||'').length>24;
+      const exp = expiryLabel(s);
 
       els.idStage.innerHTML = `
         <div class="id-card-wrapper">
           <div class="id-card-container" id="card-${idx}">
             <section class="face front" aria-hidden="false">
-              <div class="wm">
-                <img class="crest" src="${CONFIG.defaultLogo}" alt="">
-                <div class="ring" aria-hidden="true"></div>
-                <div class="script">Great Landmark College</div>
-              </div>
+              ${wmBlock()}
               <header class="id-card-header">
                 <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" loading="eager"/>
                 <h3>GREAT LANDMARK COLLEGE</h3>
@@ -539,18 +595,14 @@
             </section>
 
             <section class="face back" aria-hidden="true">
-              <div class="wm">
-                <img class="crest" src="${CONFIG.defaultLogo}" alt="">
-                <div class="ring" aria-hidden="true"></div>
-                <div class="script">Great Landmark College</div>
-              </div>
+              ${wmBlock()}
               <header class="id-card-header">
                 <img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo" loading="eager"/>
                 <h3>GREAT LANDMARK COLLEGE</h3>
               </header>
               <div class="body-back">
                 <div class="meta">
-                  <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${s.validUntil}</div>
+                  <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${sanitize(exp) || '—'}</div>
                   <div>Address: ${sanitize(s.address)||'—'}</div>
                   <div>Phone: ${sanitize(s.phone)||'—'}</div>
                   <div>Email: ${sanitize(s.email)||'—'}</div>
@@ -563,16 +615,6 @@
         </div>`;
 
       return ok;
-    }
-
-    /* ---- PRINT PAGE BUILDERS ---- */
-    function wmBlock(){
-      return `
-        <div class="wm">
-          <img class="crest" src="${CONFIG.defaultLogo}" alt="">
-          <div class="ring" aria-hidden="true"></div>
-          <div class="script">Great Landmark College</div>
-        </div>`;
     }
 
     function htmlFrontCard(s){
@@ -600,6 +642,7 @@
     }
 
     function htmlBackCard(s){
+      const exp = expiryLabel(s);
       const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
       wrap.innerHTML=`<div class="id-card-container">
         <section class="face print">
@@ -607,7 +650,7 @@
           <header class="id-card-header"><img class="logo" src="${CONFIG.defaultLogo}" alt="College Logo"/><h3>GREAT LANDMARK COLLEGE</h3></header>
           <div class="body-back">
             <div class="meta">
-              <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${s.validUntil}</div>
+              <div class="title" style="font-weight:800;margin-bottom:1mm">Valid Until: ${sanitize(exp) || '—'}</div>
               <div>Address: ${sanitize(s.address)||'—'}</div>
               <div>Phone: ${sanitize(s.phone)||'—'}</div>
               <div>Email: ${sanitize(s.email)||'—'}</div>
@@ -657,9 +700,9 @@
     }
 
     function backTransform(){
-      const mode = els.tools.duplexMode.value; // 'long' or 'short'
+      const mode = els.tools.duplexMode.value;
       const mirror = els.tools.mirrorBack.checked;
-      if (mirror) return 'scaleX(-1)';               // mirror fix
+      if (mirror) return 'scaleX(-1)';
       return (mode==='long') ? 'rotate(180deg)' : 'none';
     }
 
@@ -673,7 +716,7 @@
       let images=null;
       if(useImages){
         images=await renderAllToImages();
-        if(!images){ return buildPrintPages(side); } // fallback to HTML mode if canvas tainted
+        if(!images){ return buildPrintPages(side); }
       }
 
       for(let i=0;i<students.length;i+=per){
@@ -704,35 +747,30 @@
       }
     }
 
-    /* ✅ FIX: print only after fonts + images are loaded */
     async function doPrint(side){
       await buildPrintPages(side);
-
       if (document.fonts?.ready) await document.fonts.ready;
       await waitForImages(els.printPages);
-
-      // Ensure layout is committed before print dialog opens
       requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
     }
 
-    /* EVENTS */
     function bind(){
       els.form.addEventListener('input', async (e)=>{
         if(e.target===els.fields.photoUrl){
           const url = els.fields.photoUrl.value.trim();
-
           if(!url){
             showErr(els.errors.photo,false,'');
           }else{
             try{
               await preload(url);
               students[idx].photo=url;
-              showErr(els.errors.photo,false,''); // ✅ clear error on success
+              showErr(els.errors.photo,false,'');
             }catch{
               showErr(els.errors.photo,true,'Failed to load photo URL.');
             }
           }
         }
+        if (e.target === els.fields.sessionStart) updateSessionHint();
         updatePreview();
       });
 
@@ -765,15 +803,19 @@
         }
       });
 
-      els.tools.duplexMode.addEventListener('change',()=>{/* applied on build */});
-      els.tools.mirrorBack.addEventListener('change',()=>{/* applied on build */});
       els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect();});
-      els.tools.imageMode.addEventListener('change', ()=>{/* applied on build */});
+      els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
+      els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
 
-      document.getElementById('resetBtn').addEventListener('click', ()=>{localStorage.removeItem('glc_id_state_v2'); location.reload();});
+      document.getElementById('resetBtn').addEventListener('click', ()=>{localStorage.removeItem('glc_id_state_v3'); location.reload();});
 
       document.getElementById('addStudentBtn').addEventListener('click', ()=>{
-        students.push({name:'',dob:'',adm:'',klass:'',gender:'Male',showGender:true,validForYears:1,validUntil:futureDate(1),photo:CONFIG.defaultPhoto,phone:'',email:'',address:''});
+        students.push({
+          name:'',dob:'',adm:'',klass:'',gender:'Male',showGender:true,
+          expTerm:'3rd',
+          sessionStart: currentSessionStartYear(),
+          photo:CONFIG.defaultPhoto,phone:'',email:'',address:''
+        });
         idx=students.length-1; loadForm(); updateSelect(); updatePreview();
       });
 
@@ -787,14 +829,11 @@
         loadForm();
         updatePreview();
       });
-
-      els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
-      els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
     }
 
     (async function init(){
       try{
-        const raw=localStorage.getItem('glc_id_state_v2');
+        const raw=localStorage.getItem('glc_id_state_v3');
         if(raw){
           const data=JSON.parse(raw);
           students=data.students||students;
@@ -809,10 +848,9 @@
       try{ await preload(CONFIG.defaultLogo); }catch{}
       updatePreview();
 
-      // ✅ avoid autosave crashing when storage is full (especially with base64 photos)
       setInterval(()=>{
         try{
-          localStorage.setItem('glc_id_state_v2', JSON.stringify({students,idx}));
+          localStorage.setItem('glc_id_state_v3', JSON.stringify({students,idx}));
         }catch{}
       },1500);
     })();
