@@ -138,7 +138,16 @@
     /* PRINTING LAYOUT */
     #printPages{display:none} /* hidden on screen */
     .print-page{display:block;width:var(--page-w);height:var(--page-h);position:relative;margin:0 auto;page-break-after:always}
-    .grid-surface{position:absolute;inset:0;display:grid;justify-content:center;align-content:start}
+
+    /* ✅ FIX: center the sheet so rotating 180deg does NOT shift positions */
+    .grid-surface{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-content:center;      /* centers horizontally + vertically */
+      transform-origin:center;   /* rotation stays anchored */
+    }
+
     .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
     .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
 
@@ -151,6 +160,13 @@
       @page{size:auto;margin:0}
       html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
       body{background:#fff;padding:0;margin:0}
+
+      /* slightly strengthen watermark ONLY for print so it actually shows on paper */
+      :root{
+        --wm-opacity: .18;
+        --wm-ring: rgba(13,47,111,.14);
+        --wm-script: rgba(13,47,111,.18);
+      }
 
       /* hide app chrome */
       .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
@@ -358,7 +374,7 @@
   (function(){
     const CONFIG={
       defaultPhoto:'https://via.placeholder.com/300x300?text=Student',
-      defaultLogo:'/glc-logo.jpg', // <-- your actual logo file (same-origin)
+      defaultLogo:'./glc-logo.jpg', // ✅ safer than "/glc-logo.jpg" when hosted in folders or opened locally
       captureScale:2
     };
 
@@ -415,16 +431,32 @@
     /* helpers */
     function futureDate(years){const d=new Date();d.setFullYear(d.getFullYear()+years);return d.toISOString().split('T')[0]}
     function sanitize(s){return String(s||'').replace(/[<>&"']/g,c=>'&#'+c.charCodeAt(0)+';')}
-    function showErr(el,on,msg){if(!el)return; el.style.display=on?'block':'none'; if(msg)el.textContent=msg;}
+    function showErr(el,on,msg){if(!el)return; el.style.display=on?'block':'none'; if(msg!==undefined) el.textContent=msg;}
     function normalizeClass(s){return s.replace(/\b([A-Za-z]+)\s+(\d)/g,'$1$2').replace(/\s+/g,' ').trim()}
     async function preload(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res();i.onerror=()=>rej();i.src=src;});}
     async function fileToDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});}
     async function resizeImage(file,max=360){
       const data=await fileToDataUrl(file); const img=new Image(); img.src=data;
       return new Promise(resolve=>{
-        img.onload=()=>{const s=Math.min(max/img.width,max/img.height,1);const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',0.82));};
+        img.onload=()=>{
+          const s=Math.min(max/img.width,max/img.height,1);
+          const c=document.createElement('canvas');
+          c.width=img.width*s; c.height=img.height*s;
+          c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+          resolve(c.toDataURL('image/jpeg',0.82));
+        };
         img.onerror=()=>resolve(CONFIG.defaultPhoto);
       });
+    }
+
+    function waitForImages(root){
+      const imgs = Array.from(root.querySelectorAll('img'));
+      return Promise.all(imgs.map(img => (
+        img.complete ? Promise.resolve() : new Promise(res => {
+          img.onload = res;
+          img.onerror = res; // don't block forever
+        })
+      )));
     }
 
     function updateSelect(){
@@ -459,9 +491,14 @@
       s.address=els.fields.address.value.trim();
     }
 
-    function validField(input,errEl,pattern){const v=input.value.trim();const ok=pattern?new RegExp(pattern).test(v):!!v;showErr(errEl,!ok);return ok;}
+    function validField(input,errEl,pattern){
+      const v=input.value.trim();
+      const ok=pattern?new RegExp(pattern).test(v):!!v;
+      showErr(errEl,!ok);
+      return ok;
+    }
 
-    async function updatePreview(){
+    function updatePreview(){
       readFormIntoState();
       const ok=[
         validField(els.fields.name,els.errors.name),
@@ -525,7 +562,6 @@
           </div>
         </div>`;
 
-      await buildPrintPages('front'); // keep preview & print pages in sync
       return ok;
     }
 
@@ -596,12 +632,14 @@
         const s=students[i];
         try{
           tmp.innerHTML=''; tmp.appendChild(htmlFrontCard(s));
-          await document.fonts.ready;
+          if (document.fonts?.ready) await document.fonts.ready;
+          await waitForImages(tmp);
           const frontCanvas = await html2canvas(tmp.querySelector('.face'),{scale:CONFIG.captureScale,useCORS:true,backgroundColor:'#ffffff'});
           const front = frontCanvas.toDataURL('image/png');
 
           tmp.innerHTML=''; tmp.appendChild(htmlBackCard(s));
-          await document.fonts.ready;
+          if (document.fonts?.ready) await document.fonts.ready;
+          await waitForImages(tmp);
           const backCanvas = await html2canvas(tmp.querySelector('.face'),{scale:CONFIG.captureScale,useCORS:true,backgroundColor:'#ffffff'});
           const back = backCanvas.toDataURL('image/png');
 
@@ -621,8 +659,8 @@
     function backTransform(){
       const mode = els.tools.duplexMode.value; // 'long' or 'short'
       const mirror = els.tools.mirrorBack.checked;
-      if (mirror) return 'scaleX(-1)';           // real mirror fix
-      return (mode==='long') ? 'rotate(180deg)' : 'none'; // typical duplex alignment
+      if (mirror) return 'scaleX(-1)';               // mirror fix
+      return (mode==='long') ? 'rotate(180deg)' : 'none';
     }
 
     async function buildPrintPages(side='front'){
@@ -666,25 +704,45 @@
       }
     }
 
-    /* print helpers */
+    /* ✅ FIX: print only after fonts + images are loaded */
     async function doPrint(side){
-      await buildPrintPages(side);  // only the requested side exists => zero confusion
-      requestAnimationFrame(()=>{ setTimeout(()=>window.print(), 50); });
+      await buildPrintPages(side);
+
+      if (document.fonts?.ready) await document.fonts.ready;
+      await waitForImages(els.printPages);
+
+      // Ensure layout is committed before print dialog opens
+      requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
     }
 
     /* EVENTS */
     function bind(){
       els.form.addEventListener('input', async (e)=>{
-        if(e.target===els.fields.photoUrl && els.fields.photoUrl.value){
-          try{ await preload(els.fields.photoUrl.value); students[idx].photo=els.fields.photoUrl.value; }
-          catch{ showErr(els.errors.photo,true,'Failed to load photo URL.'); }
+        if(e.target===els.fields.photoUrl){
+          const url = els.fields.photoUrl.value.trim();
+
+          if(!url){
+            showErr(els.errors.photo,false,'');
+          }else{
+            try{
+              await preload(url);
+              students[idx].photo=url;
+              showErr(els.errors.photo,false,''); // ✅ clear error on success
+            }catch{
+              showErr(els.errors.photo,true,'Failed to load photo URL.');
+            }
+          }
         }
         updatePreview();
       });
 
       els.fields.photoFile.addEventListener('change', async ()=>{
         const f=els.fields.photoFile.files?.[0]; if(!f) return;
-        const data=await resizeImage(f); students[idx].photo=data; els.fields.photoUrl.value=''; updatePreview();
+        const data=await resizeImage(f);
+        students[idx].photo=data;
+        els.fields.photoUrl.value='';
+        showErr(els.errors.photo,false,'');
+        updatePreview();
       });
 
       els.form.addEventListener('submit',(e)=>{e.preventDefault(); updatePreview();});
@@ -705,13 +763,12 @@
           document.documentElement.style.setProperty('--page-w','210mm');
           document.documentElement.style.setProperty('--page-h','297mm');
         }
-        buildPrintPages('front');
       });
 
       els.tools.duplexMode.addEventListener('change',()=>{/* applied on build */});
       els.tools.mirrorBack.addEventListener('change',()=>{/* applied on build */});
-      els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect(); buildPrintPages('front');});
-      els.tools.imageMode.addEventListener('change', ()=>buildPrintPages('front'));
+      els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect();});
+      els.tools.imageMode.addEventListener('change', ()=>{/* applied on build */});
 
       document.getElementById('resetBtn').addEventListener('click', ()=>{localStorage.removeItem('glc_id_state_v2'); location.reload();});
 
@@ -725,9 +782,12 @@
         students.splice(idx,1); idx=Math.max(0,idx-1); loadForm(); updateSelect(); updatePreview();
       });
 
-      els.fields.studentSelect.addEventListener('change',(e)=>{idx=parseInt(e.target.value,10); loadForm(); updatePreview();});
+      els.fields.studentSelect.addEventListener('change',(e)=>{
+        idx=parseInt(e.target.value,10);
+        loadForm();
+        updatePreview();
+      });
 
-      // PRINT buttons: build only that side; no CSS mode classes anymore
       els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
       els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
     }
@@ -735,14 +795,26 @@
     (async function init(){
       try{
         const raw=localStorage.getItem('glc_id_state_v2');
-        if(raw){const data=JSON.parse(raw); students=data.students||students; idx=Math.min(data.idx||0,students.length-1);}
+        if(raw){
+          const data=JSON.parse(raw);
+          students=data.students||students;
+          idx=Math.min(data.idx||0,students.length-1);
+        }
       }catch{}
+
       bind();
       updateSelect();
       loadForm();
-      try{await preload(CONFIG.defaultLogo);}catch{}
+
+      try{ await preload(CONFIG.defaultLogo); }catch{}
       updatePreview();
-      setInterval(()=>{localStorage.setItem('glc_id_state_v2', JSON.stringify({students,idx}));},1500);
+
+      // ✅ avoid autosave crashing when storage is full (especially with base64 photos)
+      setInterval(()=>{
+        try{
+          localStorage.setItem('glc_id_state_v2', JSON.stringify({students,idx}));
+        }catch{}
+      },1500);
     })();
   })();
   </script>
