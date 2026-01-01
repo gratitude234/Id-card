@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ID Card Generator — Great Landmark College</title>
 
-  <!-- html2canvas (only used for optional "Render as images" mode) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
@@ -17,7 +14,7 @@
       --blue:#0d2f6f; --yellow:#f9a825; --red:#e54c4c; --bg:#f4f7f6; --ink:#15202b;
       --radius:12px; --pad:16px; --shadow:0 4px 12px rgba(0,0,0,.10);
 
-      /* paper */
+      /* ✅ LOCKED DEFAULT: A4 */
       --page-w:210mm; --page-h:297mm;
 
       /* true card size */
@@ -192,9 +189,6 @@
 
       .form-section .row .btn{width:100%}
 
-      .tools .btn,
-      .tools label.btn{width:auto}
-
       .id-card-wrapper{max-width:360px}
       .id-card-header h3{font-size:14px}
       .kv{font-size:10px}
@@ -265,7 +259,7 @@
             </div>
           </div>
 
-          <!-- ✅ NEW: Expiration as TERM + SESSION -->
+          <!-- Expiration as TERM + SESSION -->
           <div class="col-6">
             <div class="form-group">
               <label for="expTerm">Expiry Term</label>
@@ -336,41 +330,39 @@
     </div>
 
     <h2>Generated ID Card (Current Student)</h2>
+
+    <!-- ✅ Simplified toolbar (defaults locked) -->
     <div class="tools">
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
       <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
       <button class="btn secondary" id="printBacksBtn" type="button">Print Backs</button>
 
       <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Paper
-        <select id="paperSize"><option value="A4" selected>A4</option><option value="Letter">Letter</option></select>
-      </label>
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Duplex (Edge)
-        <select id="duplexMode"><option value="long" selected>Long-edge (rotate 180°)</option><option value="short">Short-edge (0°)</option></select>
-      </label>
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
         Cards / sheet
-        <select id="cardsPerPage"><option value="4" selected>4 (2×2)</option><option value="8">8 (2×4)</option></select>
-      </label>
-      <label style="display:flex;align-items:center;font-size:14px;color:#444;gap:.4rem">
-        <input type="checkbox" id="imageMode"> Render as images
-      </label>
-      <label style="display:flex;align-items:center;font-size:14px;color:#444;gap:.4rem">
-        <input type="checkbox" id="mirrorBack"> Reverse left-right (back)
+        <select id="cardsPerPage">
+          <option value="4" selected>4 (2×2)</option>
+          <option value="8">8 (2×4)</option>
+        </select>
       </label>
     </div>
 
     <div class="id-stage" id="idStage"></div>
-    <p class="notes" id="pageNote">Tip: Print fronts, then backs. Use Long-edge for most duplex printers. If your printer mirrors the back, tick “Reverse left-right (back)”.</p>
+    <p class="notes" id="pageNote">Tip: Print fronts, then print backs. (A4 + long-edge style back alignment is the default.)</p>
   </div>
 
   <script>
   (function(){
     const CONFIG={
       defaultPhoto:'https://via.placeholder.com/300x300?text=Student',
-      defaultLogo:'./glc-logo.jpg',
-      captureScale:2
+      defaultLogo:'./glc-logo.jpg'
+    };
+
+    // ✅ LOCKED DEFAULTS (options removed)
+    const PRINT_DEFAULTS = {
+      paper: 'A4',        // uses CSS vars already set to A4
+      duplex: 'long',     // back gets rotate(180deg)
+      renderAsImages: false,
+      mirrorBack: false
     };
 
     const els={
@@ -384,11 +376,7 @@
         flipBtn:document.getElementById('flipBtn'),
         printFrontsBtn:document.getElementById('printFrontsBtn'),
         printBacksBtn:document.getElementById('printBacksBtn'),
-        paperSize:document.getElementById('paperSize'),
-        duplexMode:document.getElementById('duplexMode'),
         cardsPerPage:document.getElementById('cardsPerPage'),
-        imageMode:document.getElementById('imageMode'),
-        mirrorBack:document.getElementById('mirrorBack'),
         addStudentBtn:document.getElementById('addStudentBtn'),
         removeStudentBtn:document.getElementById('removeStudentBtn')
       },
@@ -448,10 +436,9 @@
     }
 
     function currentSessionStartYear(){
-      // Typical NG academic session: roughly Sep -> Aug
       const now = new Date();
       const y = now.getFullYear();
-      const m = now.getMonth() + 1; // 1-12
+      const m = now.getMonth() + 1;
       return (m >= 9) ? y : (y - 1);
     }
 
@@ -474,7 +461,6 @@
       return ok;
     }
 
-    // ---------- STATE ----------
     let students=[{
       name:'ADEKUNLE SAMUEL',
       dob:'',
@@ -483,7 +469,6 @@
       gender:'Male',
       showGender:true,
 
-      // ✅ NEW expiry fields
       expTerm:'3rd',
       sessionStart: currentSessionStartYear(),
 
@@ -663,61 +648,18 @@
       return wrap;
     }
 
-    async function renderAllToImages(){
-      els.loading.classList.add('active');
-      const tmp=document.createElement('div');
-      tmp.style.position='absolute'; tmp.style.left='-9999px';
-      tmp.style.width='var(--card-w)'; tmp.style.height='var(--card-h)';
-      document.body.appendChild(tmp);
-
-      const out=[];
-      for(let i=0;i<students.length;i++){
-        const s=students[i];
-        try{
-          tmp.innerHTML=''; tmp.appendChild(htmlFrontCard(s));
-          if (document.fonts?.ready) await document.fonts.ready;
-          await waitForImages(tmp);
-          const frontCanvas = await html2canvas(tmp.querySelector('.face'),{scale:CONFIG.captureScale,useCORS:true,backgroundColor:'#ffffff'});
-          const front = frontCanvas.toDataURL('image/png');
-
-          tmp.innerHTML=''; tmp.appendChild(htmlBackCard(s));
-          if (document.fonts?.ready) await document.fonts.ready;
-          await waitForImages(tmp);
-          const backCanvas = await html2canvas(tmp.querySelector('.face'),{scale:CONFIG.captureScale,useCORS:true,backgroundColor:'#ffffff'});
-          const back = backCanvas.toDataURL('image/png');
-
-          out.push({front,back});
-        }catch(e){
-          els.tools.imageMode.checked=false;
-          document.body.removeChild(tmp);
-          els.loading.classList.remove('active');
-          return null;
-        }
-      }
-      document.body.removeChild(tmp);
-      els.loading.classList.remove('active');
-      return out;
-    }
-
+    // ✅ Locked default back behavior: "long-edge style" = rotate 180deg
     function backTransform(){
-      const mode = els.tools.duplexMode.value;
-      const mirror = els.tools.mirrorBack.checked;
-      if (mirror) return 'scaleX(-1)';
-      return (mode==='long') ? 'rotate(180deg)' : 'none';
+      if (PRINT_DEFAULTS.mirrorBack) return 'scaleX(-1)';
+      return (PRINT_DEFAULTS.duplex === 'long') ? 'rotate(180deg)' : 'none';
     }
 
     async function buildPrintPages(side='front'){
       const per=Number(els.tools.cardsPerPage.value);
       const cols=2, rows=per/cols;
       const gap= per===8 ? '6mm' : '10mm';
-      const useImages=els.tools.imageMode.checked;
 
       els.printPages.innerHTML='';
-      let images=null;
-      if(useImages){
-        images=await renderAllToImages();
-        if(!images){ return buildPrintPages(side); }
-      }
 
       for(let i=0;i<students.length;i+=per){
         const pageStudents=students.slice(i,i+per);
@@ -730,16 +672,8 @@
 
         if(side==='back'){ sheet.style.transform = backTransform(); }
 
-        pageStudents.forEach((s,ix)=>{
-          const gi=i+ix;
-          if(useImages){
-            const cell=document.createElement('div'); cell.className='id-card-wrapper print';
-            const src = (side==='front') ? images[gi].front : images[gi].back;
-            cell.innerHTML=`<img src="${src}" style="width:100%;height:100%;display:block" alt="Card ${side}">`;
-            sheet.appendChild(cell);
-          }else{
-            sheet.appendChild(side==='front' ? htmlFrontCard(s) : htmlBackCard(s));
-          }
+        pageStudents.forEach((s)=>{
+          sheet.appendChild(side==='front' ? htmlFrontCard(s) : htmlBackCard(s));
         });
 
         page.appendChild(sheet);
@@ -749,8 +683,11 @@
 
     async function doPrint(side){
       await buildPrintPages(side);
+
+      // Ensure watermark font + logo are ready before print dialog
       if (document.fonts?.ready) await document.fonts.ready;
       await waitForImages(els.printPages);
+
       requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
     }
 
@@ -793,21 +730,15 @@
         c.querySelector('.back').setAttribute('aria-hidden',!f);
       });
 
-      els.tools.paperSize.addEventListener('change',(e)=>{
-        if(e.target.value==='Letter'){
-          document.documentElement.style.setProperty('--page-w','215.9mm');
-          document.documentElement.style.setProperty('--page-h','279.4mm');
-        }else{
-          document.documentElement.style.setProperty('--page-w','210mm');
-          document.documentElement.style.setProperty('--page-h','297mm');
-        }
-      });
-
       els.tools.cardsPerPage.addEventListener('change', ()=>{updateSelect();});
+
       els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
       els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
 
-      document.getElementById('resetBtn').addEventListener('click', ()=>{localStorage.removeItem('glc_id_state_v3'); location.reload();});
+      document.getElementById('resetBtn').addEventListener('click', ()=>{
+        localStorage.removeItem('glc_id_state_v4');
+        location.reload();
+      });
 
       document.getElementById('addStudentBtn').addEventListener('click', ()=>{
         students.push({
@@ -833,7 +764,7 @@
 
     (async function init(){
       try{
-        const raw=localStorage.getItem('glc_id_state_v3');
+        const raw=localStorage.getItem('glc_id_state_v4');
         if(raw){
           const data=JSON.parse(raw);
           students=data.students||students;
@@ -850,7 +781,7 @@
 
       setInterval(()=>{
         try{
-          localStorage.setItem('glc_id_state_v3', JSON.stringify({students,idx}));
+          localStorage.setItem('glc_id_state_v4', JSON.stringify({students,idx}));
         }catch{}
       },1500);
     })();
