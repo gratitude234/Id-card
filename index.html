@@ -26,7 +26,6 @@
 
       /* Optional micro-calibration if your printer shifts the back run */
       --back-nudge-x: 1mm; --back-nudge-y: -1mm;
-      
 
       /* ✅ WATERMARK (clearer) */
       --wm-opacity: .22;                 /* was .09 */
@@ -172,7 +171,11 @@
       transform-origin: center;
     }
 
-    .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
+    .loading{
+      display:none;position:fixed;left:50%;top:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000
+    }
     .loading.active{display:flex;gap:8px}
     .loading::before{content:"⏳"}
 
@@ -676,7 +679,10 @@
     async function buildPrintPages(side='front'){
       const per=Number(els.tools.cardsPerPage.value);
       const cols=2, rows=per/cols;
-      const gap= per===8 ? '6mm' : '10mm';
+
+      /* ✅ MORE SPACE BETWEEN CARDS (especially for 8-per-sheet) */
+      const colGap = (per === 8) ? '12mm' : '16mm';
+      const rowGap = (per === 8) ? '12mm' : '14mm';
 
       els.printPages.innerHTML='';
 
@@ -687,7 +693,10 @@
         const sheet=document.createElement('div'); sheet.className='grid-surface';
         sheet.style.gridTemplateColumns=`repeat(${cols}, var(--card-w))`;
         sheet.style.gridTemplateRows=`repeat(${rows}, var(--card-h))`;
-        sheet.style.gap=gap;
+
+        /* ✅ Separate row/column gaps (better control than one "gap") */
+        sheet.style.columnGap = colGap;
+        sheet.style.rowGap = rowGap;
 
         // ✅ No sheet rotation. Fronts + backs use same origin + direction.
         pageStudents.forEach((s)=>{
