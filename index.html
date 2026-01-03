@@ -17,13 +17,21 @@
       /* ✅ LOCKED DEFAULT: A4 */
       --page-w:210mm; --page-h:297mm;
 
-      /* true card size */
+      /* card size */
       --card-w:85mm; --card-h:54mm;
 
-      /* watermark tuning */
-      --wm-opacity: .09;
-      --wm-ring: rgba(13,47,111,.08);
-      --wm-script: rgba(13,47,111,.12);
+      /* ✅ PRINT GRID ANCHOR (prevents front/back drift) */
+      --sheet-left: 15mm;
+      --sheet-top: 15mm;
+
+      /* Optional micro-calibration if your printer shifts the back run */
+      --back-nudge-x: 0mm;
+      --back-nudge-y: 0mm;
+
+      /* ✅ WATERMARK (clearer) */
+      --wm-opacity: .22;                 /* was .09 */
+      --wm-ring: rgba(13,47,111,.18);
+      --wm-script: rgba(13,47,111,.22);
     }
 
     *{box-sizing:border-box}
@@ -69,7 +77,6 @@
     .id-card-container{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s}
     .id-card-container.flipped{transform:rotateY(180deg)}
 
-    /* FLEX COLUMN => footer pinned */
     .face{
       position:absolute; inset:0; background:#fff; border-radius:var(--radius);
       box-shadow:0 4px 15px rgba(0,0,0,.18); overflow:hidden;
@@ -105,21 +112,22 @@
 
     .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
 
-    /* WATERMARK */
+    /* ✅ WATERMARK */
     .wm{
       position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
       pointer-events:none; z-index:0;
     }
     .wm .crest{
       max-width:220px; width:65%;
-      filter:grayscale(100%);
       opacity:var(--wm-opacity);
+      filter:none;                 /* ✅ clearer than grayscale+low opacity */
+      mix-blend-mode:multiply;     /* ✅ prints darker in many cases */
     }
     .wm .ring{
       position:absolute; width:78%; height:78%;
       border-radius:50%;
       border:.6mm solid var(--wm-ring);
-      opacity:.6;
+      opacity:.85;
     }
     .wm .script{
       position:absolute; left:-10%; right:-10%; top:52%;
@@ -128,40 +136,62 @@
       font-family:'Great Vibes', cursive;
       font-size:24px; letter-spacing:.05em;
       color:var(--wm-script);
-      opacity:.75;
+      opacity:.95;
       text-shadow:0 0 1px rgba(0,0,0,.03);
     }
 
     /* PRINTING LAYOUT */
     #printPages{display:none}
-    .print-page{display:block;width:var(--page-w);height:var(--page-h);position:relative;margin:0 auto;page-break-after:always}
+    .print-page{
+      display:block;
+      width:var(--page-w);
+      height:var(--page-h);
+      position:relative;
+      margin:0 auto;
+      page-break-after:always;
+    }
 
-    /* ✅ center sheet so back rotation aligns */
+    /* ✅ Anchor the print grid to a fixed top-left origin (NO centering) */
     .grid-surface{
       position:absolute;
-      inset:0;
+      top:var(--sheet-top);
+      left:var(--sheet-left);
+
       display:grid;
-      place-content:center;
-      transform-origin:center;
+      align-content:start;
+      justify-content:start;
+      transform-origin:top left;
     }
 
     .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
     .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
+
+    /* ✅ Back run stays same direction as front; only optional micro-nudge */
+    .id-card-wrapper.print.is-back{
+      transform: translate(var(--back-nudge-x), var(--back-nudge-y));
+      transform-origin: center;
+    }
 
     .loading{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 16px;border-radius:8px;z-index:1000}
     .loading.active{display:flex;gap:8px}
     .loading::before{content:"⏳"}
 
     @media print{
-      @page{size:auto;margin:0}
-      html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
+      /* ✅ LOCK A4 and stable margins (prevents "auto" differences between runs) */
+      @page{ size: 210mm 297mm; margin: 0; }
+
+      html,body,*{
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+        forced-color-adjust:none !important;
+      }
       body{background:#fff;padding:0;margin:0}
 
-      /* strengthen watermark for paper */
+      /* ✅ Paper needs stronger watermark than screen */
       :root{
-        --wm-opacity: .18;
-        --wm-ring: rgba(13,47,111,.14);
-        --wm-script: rgba(13,47,111,.18);
+        --wm-opacity: .34;
+        --wm-ring: rgba(13,47,111,.28);
+        --wm-script: rgba(13,47,111,.30);
       }
 
       .container,.id-stage,.tools,.form-section,.notes,.loading,h1,h2{display:none !important}
@@ -174,10 +204,8 @@
     @media (max-width:768px){
       body{padding:12px}
       .container{padding:16px}
-
       .grid{grid-template-columns:1fr}
       .col-6,.col-12{grid-column:span 1}
-
       .student-controls{
         display:grid;
         grid-template-columns:1fr;
@@ -186,9 +214,7 @@
       }
       .student-controls select{min-width:0;width:100%}
       .student-controls .btn{width:100%}
-
       .form-section .row .btn{width:100%}
-
       .id-card-wrapper{max-width:360px}
       .id-card-header h3{font-size:14px}
       .kv{font-size:10px}
@@ -331,7 +357,6 @@
 
     <h2>Generated ID Card (Current Student)</h2>
 
-    <!-- ✅ Simplified toolbar (defaults locked) -->
     <div class="tools">
       <button class="btn secondary" id="flipBtn" type="button">Flip</button>
       <button class="btn secondary" id="printFrontsBtn" type="button">Print Fronts</button>
@@ -347,7 +372,7 @@
     </div>
 
     <div class="id-stage" id="idStage"></div>
-    <p class="notes" id="pageNote">Tip: Print fronts, then print backs. (A4 + long-edge style back alignment is the default.)</p>
+    <p class="notes" id="pageNote">Tip: Print fronts, then print backs. (A4 locked; backs print upright like fronts.)</p>
   </div>
 
   <script>
@@ -357,10 +382,10 @@
       defaultLogo:'./glc-logo.jpg'
     };
 
-    // ✅ LOCKED DEFAULTS (options removed)
+    // ✅ LOCKED DEFAULTS (best for manual print + accurate cutting)
     const PRINT_DEFAULTS = {
-      paper: 'A4',        // uses CSS vars already set to A4
-      duplex: 'long',     // back gets rotate(180deg)
+      paper: 'A4',
+      duplex: 'none',       // ✅ no rotation (backs same direction as fronts)
       renderAsImages: false,
       mirrorBack: false
     };
@@ -628,7 +653,7 @@
 
     function htmlBackCard(s){
       const exp = expiryLabel(s);
-      const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
+      const wrap=document.createElement('div'); wrap.className='id-card-wrapper print is-back';
       wrap.innerHTML=`<div class="id-card-container">
         <section class="face print">
           ${wmBlock()}
@@ -648,12 +673,6 @@
       return wrap;
     }
 
-    // ✅ Locked default back behavior: "long-edge style" = rotate 180deg
-    function backTransform(){
-      if (PRINT_DEFAULTS.mirrorBack) return 'scaleX(-1)';
-      return (PRINT_DEFAULTS.duplex === 'long') ? 'rotate(180deg)' : 'none';
-    }
-
     async function buildPrintPages(side='front'){
       const per=Number(els.tools.cardsPerPage.value);
       const cols=2, rows=per/cols;
@@ -670,8 +689,7 @@
         sheet.style.gridTemplateRows=`repeat(${rows}, var(--card-h))`;
         sheet.style.gap=gap;
 
-        if(side==='back'){ sheet.style.transform = backTransform(); }
-
+        // ✅ No sheet rotation. Fronts + backs use same origin + direction.
         pageStudents.forEach((s)=>{
           sheet.appendChild(side==='front' ? htmlFrontCard(s) : htmlBackCard(s));
         });
@@ -736,7 +754,7 @@
       els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
 
       document.getElementById('resetBtn').addEventListener('click', ()=>{
-        localStorage.removeItem('glc_id_state_v4');
+        localStorage.removeItem('glc_id_state_v5');
         location.reload();
       });
 
@@ -764,7 +782,7 @@
 
     (async function init(){
       try{
-        const raw=localStorage.getItem('glc_id_state_v4');
+        const raw=localStorage.getItem('glc_id_state_v5');
         if(raw){
           const data=JSON.parse(raw);
           students=data.students||students;
@@ -781,7 +799,7 @@
 
       setInterval(()=>{
         try{
-          localStorage.setItem('glc_id_state_v4', JSON.stringify({students,idx}));
+          localStorage.setItem('glc_id_state_v5', JSON.stringify({students,idx}));
         }catch{}
       },1500);
     })();
