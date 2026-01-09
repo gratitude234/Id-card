@@ -255,7 +255,7 @@
           <div class="col-6">
             <div class="form-group">
               <label for="admissionNo">Admission No</label>
-              <input id="admissionNo" type="text" required tip placeholder="GLC/2025/001"
+              <input id="admissionNo" type="text" required placeholder="GLC/2025/001"
                      pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
               <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
             </div>
@@ -392,10 +392,9 @@
     // If your back prints upside down, set true:
     const BACK_ROTATE_ARTWORK_180 = false;
 
-    // Printer drift calibration (mm). Adjust in 0.5mm steps.
-    // If back is too far right => use negative X. Too far left => positive X.
-    // If back is too low => use negative Y. Too high => positive Y.
-    const BACK_NUDGE_X_MM = -6;
+    // ✅ DEFAULT BACK NUDGE (no forced shift)
+    // Adjust in 0.5mm steps only if your printer drifts on the 2nd pass.
+    const BACK_NUDGE_X_MM = 0;
     const BACK_NUDGE_Y_MM = 0;
     // ============================================================
 
@@ -662,7 +661,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
                   <div>Address: ${sanitize(s.address)||'—'}</div>
                   <div>Phone: ${sanitize(s.phone)||'—'}</div>
                   <div>Email: ${sanitize(s.email)||'—'}</div>
-                  <div>Website: www.greatlandmarkcollege.com</div>
+                  <div>Website: www.greatlandmarkcollege.org</div>
                 </div>
               </div>
               <footer class="footer">IMPORTANT. If found, return to Great Landmark College. Alteration or misuse may lead to disciplinary action.</footer>
