@@ -20,7 +20,7 @@
       /* ✅ true ID-1 card size */
       --card-w:85mm; --card-h:54mm;
 
-      /* ✅ FIX #1: anchor print layout (no centering drift) */
+      /* ✅ anchor print layout (no centering drift) */
       --sheet-left: 15mm;
       --sheet-top: 15mm;
 
@@ -147,7 +147,7 @@
       page-break-after:always;
     }
 
-    /* ✅ FIX: anchor grid (do NOT center) */
+    /* anchor grid (do NOT center) */
     .grid-surface{
       position:absolute;
       top:var(--sheet-top);
@@ -161,7 +161,7 @@
     .id-card-wrapper.print{width:var(--card-w);height:var(--card-h)}
     .face.print{width:var(--card-w);height:var(--card-h);box-shadow:none;border-radius:2mm;overflow:hidden}
 
-    /* optional: rotate back artwork (some printers need it) */
+    /* optional: rotate back artwork 180deg */
     .rotate-180{
       transform: rotate(180deg);
       transform-origin: center;
@@ -172,13 +172,11 @@
     .loading::before{content:"⏳"}
 
     @media print{
-      /* ✅ LOCK A4 + stable output */
       @page{ size: 210mm 297mm; margin: 0; }
 
       html,body,*{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; forced-color-adjust:none !important}
       body{background:#fff;padding:0;margin:0}
 
-      /* stronger watermark on paper */
       :root{
         --wm-opacity: .34;
         --wm-ring: rgba(13,47,111,.28);
@@ -257,7 +255,7 @@
           <div class="col-6">
             <div class="form-group">
               <label for="admissionNo">Admission No</label>
-              <input id="admissionNo" type="text" required placeholder="GLC/2025/001"
+              <input id="admissionNo" type="text" required tip placeholder="GLC/2025/001"
                      pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
               <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
             </div>
@@ -365,38 +363,12 @@
           <option value="8" selected>8 (2×4)</option>
         </select>
       </label>
-
-      <!-- ✅ NEW: back feed + calibration controls -->
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Back feed
-        <select id="backMode">
-          <option value="long" selected>Flip long edge (swap columns)</option>
-          <option value="short">Flip short edge (swap rows)</option>
-          <option value="rotate">Rotate 180 (swap rows+cols)</option>
-          <option value="none">None (same slots)</option>
-        </select>
-      </label>
-
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Back nudge X (mm)
-        <input id="backNudgeX" type="number" step="0.5" value="-6" style="width:80px">
-      </label>
-
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        Back nudge Y (mm)
-        <input id="backNudgeY" type="number" step="0.5" value="0" style="width:80px">
-      </label>
-
-      <label class="btn secondary" style="display:inline-flex;gap:.5rem;align-items:center">
-        <input id="backRotateArtwork" type="checkbox">
-        Rotate back artwork 180°
-      </label>
     </div>
 
     <div class="id-stage" id="idStage"></div>
     <p class="notes" id="pageNote">
       Tip: Print fronts, then backs with SAME print settings (A4, 100% scale, headers/footers off).
-      If backs are slightly off, adjust Back nudge X/Y in 0.5mm steps.
+      If backs are slightly off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM in the code (0.5mm steps).
     </p>
   </div>
 
@@ -406,6 +378,26 @@
       defaultPhoto: 'https://via.placeholder.com/300x300?text=Student',
       defaultLogo: './glc-logo.jpg'
     };
+
+    // ============================================================
+    // ✅ ONLY EDIT THESE 3 VALUES (ADMIN CALIBRATION)
+    // ============================================================
+    // Back mode for "print fronts, flip paper, print backs"
+    // 'long'   = flip like a book (most common)  -> swap columns
+    // 'short'  = flip like a notepad             -> swap rows
+    // 'rotate' = flip causes both row+col swap   -> rotate 180
+    // 'none'   = no remap
+    const BACK_MODE = 'long';
+
+    // If your back prints upside down, set true:
+    const BACK_ROTATE_ARTWORK_180 = false;
+
+    // Printer drift calibration (mm). Adjust in 0.5mm steps.
+    // If back is too far right => use negative X. Too far left => positive X.
+    // If back is too low => use negative Y. Too high => positive Y.
+    const BACK_NUDGE_X_MM = -6;
+    const BACK_NUDGE_Y_MM = 0;
+    // ============================================================
 
     const els = {
       form: document.getElementById('form'),
@@ -419,12 +411,7 @@
         printBacksBtn: document.getElementById('printBacksBtn'),
         cardsPerPage: document.getElementById('cardsPerPage'),
         addStudentBtn: document.getElementById('addStudentBtn'),
-        removeStudentBtn: document.getElementById('removeStudentBtn'),
-
-        backMode: document.getElementById('backMode'),
-        backNudgeX: document.getElementById('backNudgeX'),
-        backNudgeY: document.getElementById('backNudgeY'),
-        backRotateArtwork: document.getElementById('backRotateArtwork')
+        removeStudentBtn: document.getElementById('removeStudentBtn')
       },
       fields: {
         name: document.getElementById('studentName'),
@@ -525,17 +512,7 @@
       return ok;
     }
 
-    // ---------------------------
-    // ✅ PRINT SETTINGS (Back flip + calibration)
-    // ---------------------------
-    function readBackSettings(){
-      const mode = els.tools.backMode?.value || 'long';
-      const nx = Number(els.tools.backNudgeX?.value || 0);
-      const ny = Number(els.tools.backNudgeY?.value || 0);
-      const rot = !!els.tools.backRotateArtwork?.checked;
-      return { mode, nx, ny, rot };
-    }
-
+    // ✅ Remap slots for back printing depending on how paper is flipped
     function remapSlotsForBack(slots, cols, rows, mode){
       const grid = Array.from({length: rows}, (_, r) =>
         slots.slice(r*cols, (r+1)*cols)
@@ -552,28 +529,6 @@
 
       return grid.flat();
     }
-
-    function savePrintSettings(){
-      try{
-        const s = readBackSettings();
-        localStorage.setItem('glc_print_settings_v1', JSON.stringify(s));
-      }catch{}
-    }
-
-    function loadPrintSettings(){
-      try{
-        const raw = localStorage.getItem('glc_print_settings_v1');
-        if(!raw) return;
-        const s = JSON.parse(raw);
-
-        if(els.tools.backMode) els.tools.backMode.value = s.mode || 'long';
-        if(els.tools.backNudgeX) els.tools.backNudgeX.value = String(s.nx ?? -6);
-        if(els.tools.backNudgeY) els.tools.backNudgeY.value = String(s.ny ?? 0);
-        if(els.tools.backRotateArtwork) els.tools.backRotateArtwork.checked = !!s.rot;
-      }catch{}
-    }
-
-    // ---------------------------
 
     let students=[{
       name:'ADEKUNLE SAMUEL',
@@ -602,7 +557,7 @@
       els.note.textContent =
         `${students.length} card${students.length!==1?'s':''} • ${per} per sheet • about ${pages} page${pages!==1?'s':''}.
 Tip: Print fronts, then backs with SAME print settings (A4, 100% scale, headers/footers off).
-If backs are off, adjust Back feed + Back nudge X/Y (0.5mm steps).`;
+If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
       els.tools.removeStudentBtn.disabled = students.length<=1;
     }
 
@@ -768,11 +723,8 @@ If backs are off, adjust Back feed + Back nudge X/Y (0.5mm steps).`;
       const cols = 2;
       const rows = per / cols;
 
-      // spacing
       const colGap = (per === 8) ? '12mm' : '16mm';
       const rowGap = (per === 8) ? '12mm' : '14mm';
-
-      const back = readBackSettings();
 
       els.printPages.innerHTML = '';
 
@@ -790,25 +742,24 @@ If backs are off, adjust Back feed + Back nudge X/Y (0.5mm steps).`;
         sheet.style.columnGap = colGap;
         sheet.style.rowGap = rowGap;
 
-        // fixed slot geometry per page
+        // fixed slots so last page has same geometry
         const slots = Array(cols*rows).fill(null);
         for(let k=0;k<pageStudents.length;k++) slots[k] = pageStudents[k];
 
         let finalSlots = slots;
 
         if(side === 'back'){
-          // ✅ the big fix: remap students into slots to match physical flip
-          finalSlots = remapSlotsForBack(slots, cols, rows, back.mode);
+          // ✅ slot remap (this is the real “flip fix”)
+          finalSlots = remapSlotsForBack(slots, cols, rows, BACK_MODE);
 
-          // ✅ per-printer nudge on whole sheet
-          sheet.style.transform = `translate(${back.nx}mm, ${back.ny}mm)`;
+          // ✅ printer drift calibration
+          sheet.style.transform = `translate(${BACK_NUDGE_X_MM}mm, ${BACK_NUDGE_Y_MM}mm)`;
         }else{
           sheet.style.transform = 'none';
         }
 
         finalSlots.forEach((s)=>{
           if(!s){
-            // keep layout stable on last page
             const spacer = document.createElement('div');
             spacer.className = 'id-card-wrapper print';
             spacer.style.visibility = 'hidden';
@@ -818,8 +769,7 @@ If backs are off, adjust Back feed + Back nudge X/Y (0.5mm steps).`;
 
           const node = (side==='front') ? htmlFrontCard(s) : htmlBackCard(s);
 
-          // optional: rotate back artwork (if your printer prints upside down)
-          if(side === 'back' && back.rot){
+          if(side === 'back' && BACK_ROTATE_ARTWORK_180){
             node.classList.add('rotate-180');
           }
 
@@ -882,17 +832,8 @@ If backs are off, adjust Back feed + Back nudge X/Y (0.5mm steps).`;
       els.tools.printFrontsBtn.addEventListener('click', ()=>doPrint('front'));
       els.tools.printBacksBtn.addEventListener('click',  ()=>doPrint('back'));
 
-      // ✅ persist print/back settings
-      ['change','input'].forEach(evt=>{
-        els.tools.backMode?.addEventListener(evt, savePrintSettings);
-        els.tools.backNudgeX?.addEventListener(evt, savePrintSettings);
-        els.tools.backNudgeY?.addEventListener(evt, savePrintSettings);
-        els.tools.backRotateArtwork?.addEventListener(evt, savePrintSettings);
-      });
-
       document.getElementById('resetBtn').addEventListener('click', ()=>{
         localStorage.removeItem('glc_id_state_v6');
-        localStorage.removeItem('glc_print_settings_v1');
         location.reload();
       });
 
@@ -929,9 +870,6 @@ If backs are off, adjust Back feed + Back nudge X/Y (0.5mm steps).`;
           idx=Math.min(data.idx||0,students.length-1);
         }
       }catch{}
-
-      // ✅ load saved back flip/nudge settings
-      loadPrintSettings();
 
       bind();
       updateSelect();
