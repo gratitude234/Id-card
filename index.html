@@ -102,9 +102,22 @@
     .details h4{margin:0 0 6px;font-size:13px;color:var(--blue);border-bottom:1px solid #eee;padding-bottom:4px;font-weight:800}
     .kv{display:flex;gap:8px;margin:3px 0;font-size:11px;line-height:1.35}
     .kv strong{color:var(--blue);min-width:92px}
+
+    /* default values can be up to 2 lines */
     .kv span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .kv.name span{font-weight:700}
-    .kv.name.long span{font-size:10px}
+
+    /* ✅ NAME: force one line + let JS auto-fit (no wrap, no ellipsis, no truncation) */
+    .kv.name span{
+      display:block !important;
+      white-space:nowrap !important;
+      overflow:visible !important;
+      -webkit-line-clamp:unset !important;
+      -webkit-box-orient:unset !important;
+    }
+    .kv.name span.fit{
+      transform-origin:left center;
+      display:block;
+    }
 
     .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
 
@@ -382,18 +395,8 @@
     // ============================================================
     // ✅ ONLY EDIT THESE 3 VALUES (ADMIN CALIBRATION)
     // ============================================================
-    // Back mode for "print fronts, flip paper, print backs"
-    // 'long'   = flip like a book (most common)  -> swap columns
-    // 'short'  = flip like a notepad             -> swap rows
-    // 'rotate' = flip causes both row+col swap   -> rotate 180
-    // 'none'   = no remap
     const BACK_MODE = 'long';
-
-    // If your back prints upside down, set true:
     const BACK_ROTATE_ARTWORK_180 = false;
-
-    // ✅ DEFAULT BACK NUDGE (no forced shift)
-    // Adjust in 0.5mm steps only if your printer drifts on the 2nd pass.
     const BACK_NUDGE_X_MM = 0;
     const BACK_NUDGE_Y_MM = 0;
     // ============================================================
@@ -529,6 +532,43 @@
       return grid.flat();
     }
 
+    // ✅ AUTO-FIT NAME INTO ONE LINE (NO WRAP, NO ELLIPSIS)
+    function fitOneLine(el, {
+      maxPx = 11,
+      minPx = 7.5,
+      step = 0.25,
+      minScaleX = 0.88
+    } = {}) {
+      if (!el) return;
+
+      el.classList.add('fit');
+
+      // Reset
+      el.style.fontSize = maxPx + "px";
+      el.style.transform = "none";
+      el.style.whiteSpace = "nowrap";
+      el.style.overflow = "visible";
+
+      const p = el.closest('.kv'); // the row container
+      if (!p) return;
+
+      const maxWidth = p.clientWidth - 2;
+      if (maxWidth <= 0) return;
+
+      let size = maxPx;
+      while (size > minPx && el.scrollWidth > maxWidth) {
+        size -= step;
+        el.style.fontSize = size + "px";
+      }
+
+      if (el.scrollWidth > maxWidth) {
+        const ratio = maxWidth / el.scrollWidth;
+        const sx = Math.max(minScaleX, Math.min(1, ratio));
+        el.style.transformOrigin = "left center";
+        el.style.transform = `scaleX(${sx})`;
+      }
+    }
+
     let students=[{
       name:'ADEKUNLE SAMUEL',
       dob:'',
@@ -623,7 +663,6 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
       ].every(Boolean);
 
       const s=students[idx];
-      const longName=(s.name||'').length>24;
       const exp = expiryLabel(s);
 
       els.idStage.innerHTML = `
@@ -639,7 +678,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
                 <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo" loading="lazy"></div>
                 <div class="details">
                   <h4>STUDENT IDENTITY CARD</h4>
-                  <p class="kv name ${longName?'long':''}"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
+                  <p class="kv name"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
                   <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
                   <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
                   <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
@@ -668,11 +707,17 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
             </section>
           </div>
         </div>`;
+
+      // ✅ Fit the name after layout
+      requestAnimationFrame(() => {
+        const nameEl = els.idStage.querySelector('.kv.name span');
+        fitOneLine(nameEl, { maxPx: 11, minPx: 7.5, step: 0.25, minScaleX: 0.88 });
+      });
+
       return ok;
     }
 
     function htmlFrontCard(s){
-      const longName=(s.name||'').length>24;
       const wrap=document.createElement('div'); wrap.className='id-card-wrapper print';
       wrap.innerHTML=`<div class="id-card-container">
         <section class="face print">
@@ -682,7 +727,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
             <div class="photo"><img src="${s.photo||CONFIG.defaultPhoto}" alt="Student Photo"></div>
             <div class="details">
               <h4>STUDENT IDENTITY CARD</h4>
-              <p class="kv name ${longName?'long':''}"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
+              <p class="kv name"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
               <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
               <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
               <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
@@ -741,17 +786,13 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
         sheet.style.columnGap = colGap;
         sheet.style.rowGap = rowGap;
 
-        // fixed slots so last page has same geometry
         const slots = Array(cols*rows).fill(null);
         for(let k=0;k<pageStudents.length;k++) slots[k] = pageStudents[k];
 
         let finalSlots = slots;
 
         if(side === 'back'){
-          // ✅ slot remap (this is the real “flip fix”)
           finalSlots = remapSlotsForBack(slots, cols, rows, BACK_MODE);
-
-          // ✅ printer drift calibration
           sheet.style.transform = `translate(${BACK_NUDGE_X_MM}mm, ${BACK_NUDGE_Y_MM}mm)`;
         }else{
           sheet.style.transform = 'none';
@@ -784,7 +825,14 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
       await buildPrintPages(side);
       if (document.fonts?.ready) await document.fonts.ready;
       await waitForImages(els.printPages);
-      requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+
+      // ✅ Fit ALL names on print pages before printing
+      requestAnimationFrame(() => {
+        els.printPages.querySelectorAll('.kv.name span').forEach(el => {
+          fitOneLine(el, { maxPx: 11, minPx: 7.5, step: 0.25, minScaleX: 0.88 });
+        });
+        requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+      });
     }
 
     function bind(){
