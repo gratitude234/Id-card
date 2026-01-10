@@ -104,6 +104,9 @@
     .kv{display:flex;gap:8px;margin:3px 0;font-size:11px;line-height:1.35}
     .kv strong{color:var(--blue);min-width:92px}
 
+    /* ✅ Give NAME more room (label width smaller only on name row) */
+    .kv.name strong{min-width:72px}
+
     /* default values can be up to 2 lines */
     .kv span{
       flex:1;
@@ -127,7 +130,6 @@
       transform-origin:left center;
       display:block;
       font-weight:800;
-      -webkit-text-stroke: 0.15px rgba(0,0,0,0.15);
     }
 
     .footer{flex:0 0 auto;margin-top:auto;background:var(--red);color:#fff;text-align:center;font-weight:700;font-size:9px;padding:6px 10px}
@@ -163,9 +165,7 @@
     /* PRINTING */
     #printPages{display:none}
 
-    /* ✅ IMPORTANT FIX:
-       When we prep printing, we must measure #printPages while still in screen mode.
-       So we temporarily show it OFF-SCREEN (measurable), then call window.print(). */
+    /* ✅ show print DOM off-screen so we can measure widths before window.print() */
     body.print-measure #printPages{
       display:block !important;
       position:fixed;
@@ -416,7 +416,7 @@
     };
 
     // ============================================================
-    // ✅ ONLY EDIT THESE 3 VALUES (ADMIN CALIBRATION)
+    // ✅ ONLY EDIT THESE 4 VALUES (ADMIN CALIBRATION)
     // ============================================================
     const BACK_MODE = 'long';
     const BACK_ROTATE_ARTWORK_180 = false;
@@ -555,26 +555,27 @@
       return grid.flat();
     }
 
-    // ✅ AUTO-FIT NAME INTO ONE LINE (NO WRAP, NO ELLIPSIS, NO CUT-OFF)
-    // FIX: calculate available width = row width - label width - gap
+    // ✅ AUTO-FIT NAME INTO ONE LINE (PRINT-READABLE)
+    // - Shrink font-size first
+    // - Never go microscopic (minPx=9)
+    // - Tiny horizontal squeeze only as last resort (minScaleX=0.96)
     function fitOneLine(el, {
       maxPx = 11,
-      minPx = 7.0,
-      step = 0.25,
-      minScaleX = 0.88
+      minPx = 9,
+      minScaleX = 0.96
     } = {}) {
       if (!el) return;
 
       el.classList.add('fit');
 
       // Reset
-      el.style.fontSize = maxPx + "px";
-      el.style.transform = "none";
       el.style.whiteSpace = "nowrap";
       el.style.overflow = "visible";
+      el.style.transform = "none";
+      el.style.fontSize = maxPx + "px";
 
       const row = el.closest('.kv');
-      const label = row ? row.querySelector('strong') : null;
+      const label = row?.querySelector('strong');
       if (!row || !label) return;
 
       const cs = getComputedStyle(row);
@@ -583,23 +584,24 @@
       const maxWidth = Math.max(0, row.clientWidth - label.offsetWidth - gap - 2);
       if (maxWidth <= 0) return;
 
-      let size = maxPx;
-      while (size > minPx && el.scrollWidth > maxWidth) {
-        size -= step;
-        el.style.fontSize = size + "px";
-      }
+      if (el.scrollWidth <= maxWidth) return;
 
-      if (el.scrollWidth > maxWidth) {
-        const ratio = maxWidth / el.scrollWidth;
-        const sx = Math.max(minScaleX, Math.min(1, ratio));
-        el.style.transformOrigin = "left center";
-        el.style.transform = `scaleX(${sx})`;
-      }
+      // shrink font-size proportionally, with a floor
+      const ratio = maxWidth / el.scrollWidth;
+      const targetPx = Math.max(minPx, Math.min(maxPx, maxPx * ratio));
+      el.style.fontSize = targetPx.toFixed(2) + "px";
+
+      if (el.scrollWidth <= maxWidth) return;
+
+      // last resort: tiny squeeze
+      const sx = Math.max(minScaleX, maxWidth / el.scrollWidth);
+      el.style.transformOrigin = "left center";
+      el.style.transform = `scaleX(${sx})`;
     }
 
     function fitAllNames(root){
       root.querySelectorAll('.kv.name span').forEach(el => {
-        fitOneLine(el, { maxPx: 11, minPx: 7.0, step: 0.25, minScaleX: 0.88 });
+        fitOneLine(el, { maxPx: 11, minPx: 9, minScaleX: 0.96 });
       });
     }
 
@@ -750,7 +752,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           const nameEl = els.idStage.querySelector('.kv.name span');
-          fitOneLine(nameEl);
+          fitOneLine(nameEl, { maxPx: 11, minPx: 9, minScaleX: 0.96 });
         });
       });
 
@@ -864,19 +866,16 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
     async function doPrint(side){
       await buildPrintPages(side);
 
-      // ✅ KEY FIX: make #printPages measurable before fitting (it is normally display:none on screen)
+      // make print DOM measurable
       document.body.classList.add('print-measure');
 
       if (document.fonts?.ready) await document.fonts.ready;
       await waitForImages(els.printPages);
-
-      // allow layout to settle while it's measurable
       await raf2();
 
-      // ✅ Fit ALL names on print pages using real widths
+      // fit names with real widths (screen mode measurement)
       fitAllNames(els.printPages);
 
-      // cleanup after printing
       const cleanup = () => document.body.classList.remove('print-measure');
       window.addEventListener('afterprint', cleanup, { once:true });
 
