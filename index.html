@@ -291,9 +291,10 @@
           <div class="col-6">
             <div class="form-group">
               <label for="admissionNo">Admission No</label>
-              <input id="admissionNo" type="text" required placeholder="GLC/2025/001"
-                     pattern="^[A-Za-z]{3}\/\d{4}\/\d{3}$" value="GLC/2025/001"/>
-              <div class="error-text" id="errAdm">Use format GLC/2025/001.</div>
+              <input id="admissionNo" type="text" required placeholder="GLC2026/OND/028"
+                     value="GLC2026/OND/028"/>
+              <div class="help-text">Enter the admission number exactly as issued, e.g. GLC2026/OND/028.</div>
+              <div class="error-text" id="errAdm">Please enter an admission number.</div>
             </div>
           </div>
 
@@ -323,7 +324,7 @@
                 <option value="2nd">2nd Term</option>
                 <option value="3rd" selected>3rd Term</option>
               </select>
-              <div class="help-text">This prints as “Valid Until: 3rd Term 2025/2026”.</div>
+              <div class="help-text">This prints as “Valid Until: 3rd Term 2026/2027”.</div>
             </div>
           </div>
 
@@ -612,7 +613,7 @@
     let students=[{
       name:'ADEKUNLE SAMUEL',
       dob:'',
-      adm:'GLC/2025/001',
+      adm:'GLC2026/OND/028',
       klass:'SS1 A',
       gender:'Male',
       showGender:true,
@@ -697,7 +698,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
       const ok=[
         validField(els.fields.name,els.errors.name),
         validField(els.fields.dob,els.errors.dob),
-        validField(els.fields.adm,els.errors.adm,els.fields.adm.pattern),
+        validField(els.fields.adm,els.errors.adm),
         validField(els.fields.klass,els.errors.klass),
         validField(els.fields.gender,els.errors.gender)
       ].every(Boolean);
@@ -719,7 +720,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
                 <div class="details">
                   <h4>STUDENT IDENTITY CARD</h4>
                   <p class="kv name"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
-                  <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
+                  <p class="kv"><strong>Admission No:</strong> <span>${sanitize(s.adm)||'—'}</span></p>
                   <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
                   <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
                   ${s.showGender?`<p class="kv"><strong>Gender:</strong> <span>${sanitize(s.gender)}</span></p>`:''}
@@ -770,7 +771,7 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
             <div class="details">
               <h4>STUDENT IDENTITY CARD</h4>
               <p class="kv name"><strong>Student Name:</strong> <span>${sanitize(s.name)||'—'}</span></p>
-              <p class="kv"><strong>Admission No:</strong> <span>${(s.adm||'').match(els.fields.adm.pattern)?s.adm:'—'}</span></p>
+              <p class="kv"><strong>Admission No:</strong> <span>${sanitize(s.adm)||'—'}</span></p>
               <p class="kv"><strong>DOB:</strong> <span>${s.dob||'—'}</span></p>
               <p class="kv"><strong>Class:</strong> <span>${sanitize(s.klass)||'—'}</span></p>
               ${s.showGender?`<p class="kv"><strong>Gender:</strong> <span>${sanitize(s.gender)}</span></p>`:''}
@@ -961,6 +962,10 @@ If backs are off, adjust BACK_NUDGE_X_MM / BACK_NUDGE_Y_MM (0.5mm steps).`;
         if(raw){
           const data=JSON.parse(raw);
           students=data.students||students;
+          // Upgrade cards saved with the previous 2025/2026 default to 2026/2027.
+          students.forEach(st => {
+            if (Number(st.sessionStart) === 2025) st.sessionStart = 2026;
+          });
           idx=Math.min(data.idx||0,students.length-1);
         }
       }catch{}
